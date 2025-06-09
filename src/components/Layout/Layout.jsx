@@ -6,6 +6,7 @@ import SettingsModal from '../Modals/SettingsModal'
 import StoryViewerModal from '../Modals/StoryViewerModal'
 import PostDetailModal from '../Modals/PostDetailModal'
 import ShareSheetModal from '../Modals/ShareSheetModal'
+import StoryCreationModal from '../Stories/StoryCreationModal'
 
 function Layout() {
   const location = useLocation()
@@ -13,10 +14,17 @@ function Layout() {
   const [storyViewerOpen, setStoryViewerOpen] = useState(false)
   const [postDetailOpen, setPostDetailOpen] = useState(false)
   const [shareSheetOpen, setShareSheetOpen] = useState(false)
+  const [storyCreationOpen, setStoryCreationOpen] = useState(false)
   const [selectedStory, setSelectedStory] = useState(null)
   const [selectedPost, setSelectedPost] = useState(null)
 
   const hideNavigation = location.pathname === '/create' || location.pathname === '/messages'
+
+  const handleStoryPublish = (storyData) => {
+    console.log('Publishing story:', storyData)
+    // Here you would typically send the story data to your backend
+    // For now, we'll just log it
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -34,7 +42,8 @@ function Layout() {
             setSelectedPost(post)
             setPostDetailOpen(true)
           },
-          openShareSheet: () => setShareSheetOpen(true)
+          openShareSheet: () => setShareSheetOpen(true),
+          openStoryCreation: () => setStoryCreationOpen(true)
         }} />
       </main>
 
@@ -68,6 +77,12 @@ function Layout() {
       <ShareSheetModal
         isOpen={shareSheetOpen}
         onClose={() => setShareSheetOpen(false)}
+      />
+
+      <StoryCreationModal
+        isOpen={storyCreationOpen}
+        onClose={() => setStoryCreationOpen(false)}
+        onPublish={handleStoryPublish}
       />
     </div>
   )

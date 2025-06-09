@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { FiPlus } from 'react-icons/fi'
 import { stories } from '../../data/dummyData'
 
-function StoriesCarousel({ onStoryClick }) {
+function StoriesCarousel({ onStoryClick, onCreateStory }) {
   const scrollRef = useRef(null)
 
   const scroll = (direction) => {
@@ -26,9 +26,10 @@ function StoriesCarousel({ onStoryClick }) {
           {/* Add Story Button */}
           <motion.div
             whileTap={{ scale: 0.95 }}
-            className="flex flex-col items-center space-y-2 flex-shrink-0"
+            onClick={onCreateStory}
+            className="flex flex-col items-center space-y-2 flex-shrink-0 cursor-pointer"
           >
-            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center border-2 border-dashed border-gray-300">
+            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center border-2 border-dashed border-gray-300 hover:border-primary-400 transition-colors">
               <FiPlus className="text-gray-500 text-xl" />
             </div>
             <span className="text-xs text-gray-600 font-medium">Your Story</span>

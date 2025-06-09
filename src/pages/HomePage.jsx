@@ -2,10 +2,9 @@ import { motion } from 'framer-motion'
 import { useOutletContext } from 'react-router-dom'
 import StoriesCarousel from '../components/Stories/StoriesCarousel'
 import PostFeed from '../components/Feed/PostFeed'
-import LoadingSpinner from '../components/UI/LoadingSpinner'
 
 function HomePage() {
-  const { openStoryViewer, openPostDetail, openShareSheet } = useOutletContext()
+  const { openStoryViewer, openPostDetail, openShareSheet, openStoryCreation } = useOutletContext()
 
   return (
     <motion.div
@@ -16,7 +15,10 @@ function HomePage() {
     >
       {/* Stories Section */}
       <div className="bg-white border-b border-gray-200 sticky top-16 z-30">
-        <StoriesCarousel onStoryClick={openStoryViewer} />
+        <StoriesCarousel 
+          onStoryClick={openStoryViewer}
+          onCreateStory={openStoryCreation}
+        />
       </div>
 
       {/* Posts Feed */}
