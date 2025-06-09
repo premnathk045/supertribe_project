@@ -15,7 +15,7 @@ import {
   FiHeart,
   FiArrowLeft,
   FiCheck,
-  FiPalette,
+  FiEdit,
   FiAlignLeft,
   FiAlignCenter,
   FiAlignRight,
@@ -721,7 +721,7 @@ function StoryCreationModal({ isOpen, onClose, onPublish }) {
                   <button
                     className="p-3 bg-black/50 rounded-full text-white"
                   >
-                    <FiPalette className="text-xl" />
+                    <FiEdit className="text-xl" />
                   </button>
                 </div>
 
