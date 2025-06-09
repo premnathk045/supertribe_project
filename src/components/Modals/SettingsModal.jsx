@@ -1,0 +1,79 @@
+import { motion, AnimatePresence } from 'framer-motion'
+import { FiX, FiUser, FiLock, FiBell, FiCreditCard, FiStar, FiHelpCircle } from 'react-icons/fi'
+
+const settingsSections = [
+  { icon: FiUser, title: 'Account Settings', description: 'Manage your account details' },
+  { icon: FiLock, title: 'Privacy & Security', description: 'Control your privacy settings' },
+  { icon: FiBell, title: 'Notifications', description: 'Manage notification preferences' },
+  { icon: FiCreditCard, title: 'Payment Methods', description: 'Add or edit payment options' },
+  { icon: FiStar, title: 'Creator Settings', description: 'Manage your creator profile' },
+  { icon: FiHelpCircle, title: 'Help & Support', description: 'Get help and contact support' }
+]
+
+function SettingsModal({ isOpen, onClose }) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="w-full max-w-lg bg-white rounded-t-3xl p-6 max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <FiX className="text-xl" />
+              </button>
+            </div>
+
+            {/* Settings Options */}
+            <div className="space-y-3">
+              {settingsSections.map((section, index) => (
+                <motion.button
+                  key={section.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ x: 4 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-left"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="p-2 bg-white rounded-lg">
+                      <section.icon className="text-xl text-primary-500" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">{section.title}</h3>
+                      <p className="text-sm text-gray-600">{section.description}</p>
+                    </div>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+
+            {/* Version Info */}
+            <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+              <p className="text-sm text-gray-500">CreatorSpace v1.0.0</p>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
+export default SettingsModal

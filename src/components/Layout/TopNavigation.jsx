@@ -1,0 +1,48 @@
+import { Link } from 'react-router-dom'
+import { FiSettings, FiHeart, FiMessageCircle } from 'react-icons/fi'
+import { motion } from 'framer-motion'
+
+function TopNavigation({ onSettingsClick }) {
+  return (
+    <motion.header 
+      initial={{ y: -60 }}
+      animate={{ y: 0 }}
+      className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200"
+    >
+      <div className="max-w-lg mx-auto px-4 h-16 flex items-center justify-between">
+        <Link to="/" className="flex items-center">
+          <div className="text-2xl font-bold gradient-text">
+            CreatorSpace
+          </div>
+        </Link>
+
+        <div className="flex items-center space-x-4">
+          <Link 
+            to="/notifications"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors relative"
+          >
+            <FiHeart className="text-xl" />
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
+          </Link>
+          
+          <Link 
+            to="/messages"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors relative"
+          >
+            <FiMessageCircle className="text-xl" />
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary-500 rounded-full"></div>
+          </Link>
+          
+          <button 
+            onClick={onSettingsClick}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <FiSettings className="text-xl" />
+          </button>
+        </div>
+      </div>
+    </motion.header>
+  )
+}
+
+export default TopNavigation

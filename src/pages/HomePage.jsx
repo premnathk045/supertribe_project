@@ -1,0 +1,33 @@
+import { motion } from 'framer-motion'
+import { useOutletContext } from 'react-router-dom'
+import StoriesCarousel from '../components/Stories/StoriesCarousel'
+import PostFeed from '../components/Feed/PostFeed'
+import LoadingSpinner from '../components/UI/LoadingSpinner'
+
+function HomePage() {
+  const { openStoryViewer, openPostDetail, openShareSheet } = useOutletContext()
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="min-h-screen"
+    >
+      {/* Stories Section */}
+      <div className="bg-white border-b border-gray-200 sticky top-16 z-30">
+        <StoriesCarousel onStoryClick={openStoryViewer} />
+      </div>
+
+      {/* Posts Feed */}
+      <div className="max-w-lg mx-auto">
+        <PostFeed 
+          onPostClick={openPostDetail}
+          onShareClick={openShareSheet}
+        />
+      </div>
+    </motion.div>
+  )
+}
+
+export default HomePage
