@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { FiSettings, FiHeart, FiMessageCircle } from 'react-icons/fi'
+import { FiSettings, FiHeart } from 'react-icons/fi'
 import { motion } from 'framer-motion'
 
 function TopNavigation({ onSettingsClick }) {
@@ -23,14 +23,6 @@ function TopNavigation({ onSettingsClick }) {
           >
             <FiHeart className="text-xl" />
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
-          </Link>
-          
-          <Link 
-            to="/messages"
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors relative"
-          >
-            <FiMessageCircle className="text-xl" />
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary-500 rounded-full"></div>
           </Link>
           
           <button 

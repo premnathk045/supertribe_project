@@ -1,11 +1,12 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { FiHome, FiSearch, FiPlusSquare, FiUser } from 'react-icons/fi'
+import { FiHome, FiSearch, FiPlusSquare, FiUser, FiMessageCircle } from 'react-icons/fi'
 import { motion } from 'framer-motion'
 
 const navItems = [
   { path: '/', icon: FiHome, label: 'Home' },
   { path: '/discover', icon: FiSearch, label: 'Discover' },
   { path: '/create', icon: FiPlusSquare, label: 'Create' },
+  { path: '/messages', icon: FiMessageCircle, label: 'Messages' },
   { path: '/profile/johndoe', icon: FiUser, label: 'Profile' }
 ]
 
@@ -38,6 +39,10 @@ function BottomNavigation() {
                       isActive ? 'text-primary-500' : 'text-gray-600'
                     } transition-colors`} 
                   />
+                  {/* Notification badge for messages */}
+                  {path === '/messages' && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary-500 rounded-full"></div>
+                  )}
                   {isActive && (
                     <motion.div
                       layoutId="activeTab"
