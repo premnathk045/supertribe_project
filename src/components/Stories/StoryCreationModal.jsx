@@ -5,7 +5,6 @@ import {
   FiCamera, 
   FiImage, 
   FiType, 
-  FiRotateCcw, 
   FiZap, 
   FiZapOff,
   FiCircle,
@@ -18,11 +17,9 @@ import {
   FiEdit,
   FiAlignLeft,
   FiAlignCenter,
-  FiAlignRight,
-  FiMinus,
-  FiPlus,
-  FiUndo,
-  FiRedo
+  FiAlignRight,  FiMinus,  FiPlus,
+  FiRotateCcw,
+  FiRotateCw
 } from 'react-icons/fi'
 import { useDropzone } from 'react-dropzone'
 
@@ -725,12 +722,11 @@ function StoryCreationModal({ isOpen, onClose, onPublish }) {
                   </button>
                 </div>
 
-                <div className="flex justify-center space-x-4">
+                <div className="flex justify-center space-x-4">                  <button className="p-2 bg-black/50 rounded-full text-white">
+                    <FiRotateCcw className="text-lg" />
+                  </button>                  
                   <button className="p-2 bg-black/50 rounded-full text-white">
-                    <FiUndo className="text-lg" />
-                  </button>
-                  <button className="p-2 bg-black/50 rounded-full text-white">
-                    <FiRedo className="text-lg" />
+                    <FiRotateCw className="text-lg" />
                   </button>
                 </div>
               </div>
