@@ -261,7 +261,7 @@ function TextMode({ storyData, onUpdate, onPreview }) {
           animate={{ opacity: 1, scale: 1 }}
           whileTap={{ scale: 0.9 }}
           onClick={onPreview}
-          className="absolute top-20 right-4 w-12 h-12 bg-white rounded-full flex items-center justify-center"
+          className="absolute top-40 right-4 w-12 h-12 bg-white rounded-full flex items-center justify-center"
         >
           <FiCheck className="text-black text-xl" />
         </motion.button>
