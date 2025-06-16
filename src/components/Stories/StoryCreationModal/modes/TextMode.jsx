@@ -101,7 +101,7 @@ function TextMode({ storyData, onUpdate, onPreview }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
-          className="absolute bottom-0 left-0 right-0 bg-white/20 backdrop-blur-sm from-black/80 to-transparent p-6 space-y-4"
+          className="absolute bottom-0 left-0 right-0 bg-white/20 backdrop-blur-sm z-50 from-black/80 to-transparent p-6 space-y-4"
         >
           {/* Font Selection */}
           <div className="flex justify-center space-x-2 overflow-x-auto">
