@@ -236,7 +236,7 @@ function VideoMode({ onCapture, onPreview }) {
       )}
 
       {/* Top Controls */}
-      <div className="absolute top-20 left-4 right-4 flex items-center justify-between z-10">
+      <div className="absolute top-40 left-4 right-4 flex items-center justify-between z-10">
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={toggleFlash}
