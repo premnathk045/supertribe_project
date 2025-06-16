@@ -170,7 +170,7 @@ function VideoMode({ onCapture, onPreview }) {
         <video
           src={recordedVideo}
           controls
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
         />
         
         {/* Action Buttons */}
@@ -203,7 +203,7 @@ function VideoMode({ onCapture, onPreview }) {
         autoPlay
         playsInline
         muted
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain"
       />
 
       {/* Recording Indicator */}

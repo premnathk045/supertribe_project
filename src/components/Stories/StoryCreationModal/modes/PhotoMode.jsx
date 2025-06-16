@@ -137,7 +137,7 @@ function PhotoMode({ onCapture, onPreview }) {
         <img
           src={capturedPhoto}
           alt="Captured"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
         />
         
         {/* Action Buttons */}
@@ -174,7 +174,7 @@ function PhotoMode({ onCapture, onPreview }) {
           autoPlay
           playsInline
           muted
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
         />
         
         {/* Grid Overlay */}
