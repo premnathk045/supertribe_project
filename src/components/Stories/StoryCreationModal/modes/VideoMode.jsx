@@ -174,7 +174,7 @@ function VideoMode({ onCapture, onPreview }) {
         />
         
         {/* Action Buttons */}
-        <div className="absolute bottom-20 left-0 right-0 flex items-center justify-center space-x-8">
+        <div className="absolute bottom-40 left-0 right-0 flex items-center justify-center space-x-8">
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={retakeVideo}
