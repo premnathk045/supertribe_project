@@ -144,7 +144,7 @@ function StoryCreationModal({ isOpen, onClose, onPublish }) {
           />
 
           {/* Main Content */}
-          <div className="flex-1 relative overflow-hidden">
+          <div className="flex-1 h-full relative overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.div
                 key={isPreviewMode ? 'preview' : currentMode}
