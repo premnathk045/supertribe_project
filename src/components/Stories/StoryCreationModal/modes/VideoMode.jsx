@@ -20,6 +20,8 @@ function VideoMode({ onCapture, onPreview }) {
   const [flashMode, setFlashMode] = useState('off')
   const [audioEnabled, setAudioEnabled] = useState(true)
   const [recordedVideo, setRecordedVideo] = useState(null)
+  const [cameraError, setCameraError] = useState(null)
+  const [recordingError, setRecordingError] = useState(null)
 
   const videoRef = useRef(null)
   const mediaRecorderRef = useRef(null)
@@ -40,7 +42,10 @@ function VideoMode({ onCapture, onPreview }) {
 
   const startCamera = async () => {
     try {
+      console.log('🎥 Starting camera with constraints:', { facingMode, audioEnabled })
+      
       if (stream) {
+        console.log('🔄 Stopping existing stream')
         stream.getTracks().forEach(track => track.stop())
       }
 
@@ -52,14 +57,20 @@ function VideoMode({ onCapture, onPreview }) {
         audio: audioEnabled
       }
 
+      console.log('📱 Requesting media with constraints:', constraints)
       const newStream = await navigator.mediaDevices.getUserMedia(constraints)
+      console.log('✅ Camera stream acquired successfully')
+      
       setStream(newStream)
+      setCameraError(null)
       
       if (videoRef.current) {
         videoRef.current.srcObject = newStream
+        console.log('📺 Video element updated with stream')
       }
     } catch (error) {
-      console.error('Error accessing camera:', error)
+      console.error('❌ Error accessing camera:', error)
+      setCameraError(error.message)
     }
   }
 
@@ -75,23 +86,74 @@ function VideoMode({ onCapture, onPreview }) {
     setAudioEnabled(prev => !prev)
   }
 
+  const getSupportedMimeType = () => {
+    // Try different codec options in order of preference
+    const mimeTypes = [
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm;codecs=h264',
+      'video/webm',
+      'video/mp4;codecs=h264',
+      'video/mp4'
+    ]
+
+    for (const mimeType of mimeTypes) {
+      if (MediaRecorder.isTypeSupported(mimeType)) {
+        console.log('✅ Using supported MIME type:', mimeType)
+        return mimeType
+      }
+    }
+
+    console.warn('⚠️ No supported MIME types found, using default')
+    return 'video/webm' // Fallback
+  }
+
   const startRecording = () => {
-    if (!stream) return
+    if (!stream) {
+      console.error('❌ No camera stream available for recording')
+      setRecordingError('Camera not available')
+      return
+    }
+
+    console.log('🎬 Starting video recording')
 
     try {
       chunksRef.current = []
-      mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9'
-      })
+      setRecordingError(null)
+
+      const mimeType = getSupportedMimeType()
+      console.log('🎥 Creating MediaRecorder with MIME type:', mimeType)
+
+      const options = { mimeType }
+      
+      // Add bitrate for better mobile compatibility
+      if (mimeType.includes('webm')) {
+        options.videoBitsPerSecond = 2500000 // 2.5 Mbps
+        options.audioBitsPerSecond = 128000  // 128 kbps
+      }
+
+      mediaRecorderRef.current = new MediaRecorder(stream, options)
+      console.log('✅ MediaRecorder created successfully')
 
       mediaRecorderRef.current.ondataavailable = (event) => {
+        console.log('📦 Recording data available, size:', event.data.size)
         if (event.data.size > 0) {
           chunksRef.current.push(event.data)
         }
       }
 
       mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'video/webm' })
+        console.log('🛑 Recording stopped, processing chunks:', chunksRef.current.length)
+        
+        if (chunksRef.current.length === 0) {
+          console.error('❌ No recording data available')
+          setRecordingError('Recording failed - no data')
+          return
+        }
+
+        const blob = new Blob(chunksRef.current, { type: mimeType })
+        console.log('✅ Video blob created, size:', blob.size)
+        
         const url = URL.createObjectURL(blob)
         setRecordedVideo(url)
         
@@ -103,7 +165,15 @@ function VideoMode({ onCapture, onPreview }) {
         })
       }
 
-      mediaRecorderRef.current.start()
+      mediaRecorderRef.current.onerror = (event) => {
+        console.error('❌ MediaRecorder error:', event.error)
+        setRecordingError(`Recording error: ${event.error.message}`)
+        setIsRecording(false)
+      }
+
+      mediaRecorderRef.current.start(1000) // Collect data every second
+      console.log('▶️ Recording started')
+      
       setIsRecording(true)
       setRecordingTime(0)
 
@@ -112,6 +182,7 @@ function VideoMode({ onCapture, onPreview }) {
         setRecordingTime(prev => {
           const newTime = prev + 1
           if (newTime >= VIDEO_CONSTRAINTS.MAX_DURATION / 1000) {
+            console.log('⏰ Maximum recording time reached')
             stopRecording()
             return prev
           }
@@ -120,13 +191,22 @@ function VideoMode({ onCapture, onPreview }) {
       }, 1000)
 
     } catch (error) {
-      console.error('Error starting recording:', error)
+      console.error('❌ Error starting recording:', error)
+      setRecordingError(`Failed to start recording: ${error.message}`)
     }
   }
 
   const stopRecording = () => {
+    console.log('🛑 Stopping recording')
+    
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop()
+      try {
+        mediaRecorderRef.current.stop()
+        console.log('✅ MediaRecorder stopped')
+      } catch (error) {
+        console.error('❌ Error stopping MediaRecorder:', error)
+      }
+      
       setIsRecording(false)
       
       if (timerRef.current) {
@@ -137,6 +217,8 @@ function VideoMode({ onCapture, onPreview }) {
   }
 
   const toggleRecording = () => {
+    console.log('🎯 Toggle recording - current state:', isRecording)
+    
     if (isRecording) {
       stopRecording()
     } else {
@@ -147,6 +229,7 @@ function VideoMode({ onCapture, onPreview }) {
   const retakeVideo = () => {
     setRecordedVideo(null)
     setRecordingTime(0)
+    setRecordingError(null)
     if (recordedVideo) {
       URL.revokeObjectURL(recordedVideo)
     }
@@ -163,6 +246,26 @@ function VideoMode({ onCapture, onPreview }) {
   }
 
   const progressPercentage = (recordingTime / (VIDEO_CONSTRAINTS.MAX_DURATION / 1000)) * 100
+
+  // Show error state
+  if (cameraError) {
+    return (
+      <div className="h-full bg-black flex items-center justify-center p-8">
+        <div className="text-center text-white">
+          <div className="text-6xl mb-4">📷</div>
+          <h3 className="text-lg font-semibold mb-2">Camera Error</h3>
+          <p className="text-sm text-gray-300 mb-4">{cameraError}</p>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={startCamera}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+          >
+            Try Again
+          </motion.button>
+        </div>
+      </div>
+    )
+  }
 
   if (recordedVideo) {
     return (
@@ -205,6 +308,19 @@ function VideoMode({ onCapture, onPreview }) {
         muted
         className="w-full h-full object-cover"
       />
+
+      {/* Recording Error */}
+      {recordingError && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="absolute top-20 left-4 right-4 z-10"
+        >
+          <div className="bg-red-500 text-white px-4 py-2 rounded-lg text-center">
+            <p className="text-sm">{recordingError}</p>
+          </div>
+        </motion.div>
+      )}
 
       {/* Recording Indicator */}
       {isRecording && (
