@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiX, FiUser, FiLock, FiBell, FiCreditCard, FiStar, FiHelpCircle, FiLogOut } from 'react-icons/fi'
+import { useNavigate } from 'react-router-dom'
+import { FiX, FiUser, FiLock, FiBell, FiCreditCard, FiStar, FiHelpCircle, FiLogOut, FiSettings } from 'react-icons/fi'
 import { useAuth } from '../../contexts/AuthContext'
 
 const settingsSections = [
@@ -7,16 +8,26 @@ const settingsSections = [
   { icon: FiLock, title: 'Privacy & Security', description: 'Control your privacy settings' },
   { icon: FiBell, title: 'Notifications', description: 'Manage notification preferences' },
   { icon: FiCreditCard, title: 'Payment Methods', description: 'Add or edit payment options' },
-  { icon: FiStar, title: 'Creator Settings', description: 'Manage your creator profile' },
   { icon: FiHelpCircle, title: 'Help & Support', description: 'Get help and contact support' }
 ]
 
 function SettingsModal({ isOpen, onClose }) {
-  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
+  const { user, userProfile, signOut, isCreator, isFan } = useAuth()
 
   const handleSignOut = async () => {
     await signOut()
     onClose()
+  }
+
+  const handleBecomeCreator = () => {
+    onClose()
+    navigate('/creator-verification')
+  }
+
+  const handleCreatorSettings = () => {
+    onClose()
+    navigate('/creator-dashboard')
   }
 
   return (
@@ -62,8 +73,64 @@ function SettingsModal({ isOpen, onClose }) {
                       {user.user_metadata?.full_name || 'User'}
                     </h3>
                     <p className="text-sm text-gray-600">{user.email}</p>
+                    {userProfile && (
+                      <div className="flex items-center space-x-2 mt-1">
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          isCreator() 
+                            ? 'bg-purple-100 text-purple-700' 
+                            : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {isCreator() ? 'Verified Creator' : 'Fan'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Creator Status Section */}
+            {user && (
+              <div className="mb-6">
+                {isFan() ? (
+                  <motion.button
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    whileHover={{ x: 4 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleBecomeCreator}
+                    className="w-full p-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all text-left"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="p-2 bg-white/20 rounded-lg">
+                        <FiStar className="text-xl text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-white">Become a Creator</h3>
+                        <p className="text-sm text-white/90">Start monetizing your content and build your audience</p>
+                      </div>
+                    </div>
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    whileHover={{ x: 4 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleCreatorSettings}
+                    className="w-full p-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all text-left"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="p-2 bg-white/20 rounded-lg">
+                        <FiSettings className="text-xl text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-white">Creator Settings</h3>
+                        <p className="text-sm text-white/90">Manage your creator dashboard and analytics</p>
+                      </div>
+                    </div>
+                  </motion.button>
+                )}
               </div>
             )}
 

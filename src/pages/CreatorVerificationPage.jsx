@@ -13,7 +13,7 @@ import LoadingSpinner from '../components/UI/LoadingSpinner'
 
 function CreatorVerificationPage() {
   const navigate = useNavigate()
-  const { user, userProfile, updateUserProfile } = useAuth()
+  const { user, userProfile, updateUserProfile, refreshUserProfile } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [verificationData, setVerificationData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -158,6 +158,9 @@ function CreatorVerificationPage() {
               user_type: 'creator',
               is_verified: true
             })
+
+            // Refresh the user profile to update the context
+            await refreshUserProfile()
 
             navigate('/creator-dashboard')
           }, 2000)

@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FiSettings, FiHeart, FiUser, FiStar } from 'react-icons/fi'
+import { FiSettings, FiHeart, FiUser } from 'react-icons/fi'
 import { motion } from 'framer-motion'
 import { useAuth } from '../../contexts/AuthContext'
 import AuthModal from '../Auth/AuthModal'
 
 function TopNavigation({ onSettingsClick }) {
-  const { user, userProfile, isFan } = useAuth()
+  const { user } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
 
   return (
@@ -26,17 +26,6 @@ function TopNavigation({ onSettingsClick }) {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                {/* Become Creator Button for Fans */}
-                {isFan() && (
-                  <Link
-                    to="/creator-verification"
-                    className="flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-3 py-2 rounded-lg font-medium transition-all text-sm"
-                  >
-                    <FiStar className="text-lg" />
-                    <span>Become Creator</span>
-                  </Link>
-                )}
-
                 <Link 
                   to="/notifications"
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors relative"

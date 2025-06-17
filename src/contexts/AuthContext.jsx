@@ -37,6 +37,15 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const refreshUserProfile = async () => {
+    if (user) {
+      const profile = await fetchUserProfile(user.id)
+      setUserProfile(profile)
+      return profile
+    }
+    return null
+  }
+
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -108,7 +117,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   const isFan = () => {
-    return userProfile?.user_type === 'fan' || !userProfile?.is_verified
+    return !userProfile || userProfile?.user_type === 'fan' || !userProfile?.is_verified
   }
 
   const value = {
@@ -118,6 +127,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     signOut,
     updateUserProfile,
+    refreshUserProfile,
     isCreator,
     isFan,
     fetchUserProfile
