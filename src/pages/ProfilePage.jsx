@@ -23,6 +23,12 @@ function ProfilePage() {
   const { username } = useParams()
   const { user, userProfile, updateUserProfile } = useAuth()
   const [profileData, setProfileData] = useState(null)
+  const [userPosts, setUserPosts] = useState([])
+  const [profileStats, setProfileStats] = useState({
+    postCount: 0,
+    followerCount: 0,
+    followingCount: 0
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -52,30 +58,60 @@ function ProfilePage() {
       setLoading(true)
       setError(null)
 
-      const { data, error } = await supabase
+      // Fetch profile data
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('username', username)
         .single()
 
-      if (error) {
-        if (error.code === 'PGRST116') {
+      if (profileError) {
+        if (profileError.code === 'PGRST116') {
           setError('Profile not found')
         } else {
           setError('Failed to load profile')
         }
-        console.error('Error fetching profile:', error)
+        console.error('Error fetching profile:', profileError)
         return
       }
 
-      setProfileData(data)
+      setProfileData(profile)
       
       // Initialize edit form with current data
       setEditForm({
-        username: data.username || '',
-        display_name: data.display_name || '',
-        bio: data.bio || '',
-        avatar_url: data.avatar_url || ''
+        username: profile.username || '',
+        display_name: profile.display_name || '',
+        bio: profile.bio || '',
+        avatar_url: profile.avatar_url || ''
+      })
+
+      // Fetch user's posts
+      const { data: posts, error: postsError } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          profiles!posts_user_id_fkey (
+            username,
+            display_name,
+            avatar_url,
+            is_verified,
+            user_type
+          )
+        `)
+        .eq('user_id', profile.id)
+        .order('created_at', { ascending: false })
+
+      if (postsError) {
+        console.error('Error fetching posts:', postsError)
+      } else {
+        setUserPosts(posts || [])
+      }
+
+      // Calculate stats
+      setProfileStats({
+        postCount: posts?.length || 0,
+        followerCount: 0, // TODO: Implement followers table
+        followingCount: 0  // TODO: Implement following table
       })
 
     } catch (error) {
@@ -355,15 +391,15 @@ function ProfilePage() {
                 
                 <div className="flex space-x-6 text-sm">
                   <div className="text-center">
-                    <div className="font-bold text-gray-900">0</div>
+                    <div className="font-bold text-gray-900">{profileStats.postCount}</div>
                     <div className="text-gray-600">Posts</div>
                   </div>
                   <div className="text-center">
-                    <div className="font-bold text-gray-900">0</div>
+                    <div className="font-bold text-gray-900">{profileStats.followerCount}</div>
                     <div className="text-gray-600">Followers</div>
                   </div>
                   <div className="text-center">
-                    <div className="font-bold text-gray-900">0</div>
+                    <div className="font-bold text-gray-900">{profileStats.followingCount}</div>
                     <div className="text-gray-600">Following</div>
                   </div>
                 </div>
@@ -512,22 +548,76 @@ function ProfilePage() {
         {/* Content Grid */}
         {!isEditing && (
           <div className="p-4">
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">
-                {activeTab === 'posts' ? '📝' : activeTab === 'saved' ? '🔖' : '❤️'}
+            {activeTab === 'posts' && userPosts.length > 0 ? (
+              <div className="grid grid-cols-3 gap-1">
+                {userPosts.map((post, index) => (
+                  <motion.div
+                    key={post.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative group cursor-pointer"
+                  >
+                    {post.media_urls && post.media_urls.length > 0 ? (
+                      <img
+                        src={post.media_urls[0]}
+                        alt="Post"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-gray-400 text-sm">No Image</span>
+                      </div>
+                    )}
+                    
+                    {/* Overlay on hover */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="flex items-center space-x-4 text-white">
+                        <div className="flex items-center space-x-1">
+                          <FiHeart className="fill-current" />
+                          <span className="font-medium">{post.like_count || 0}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <FiMessageCircle />
+                          <span className="font-medium">{post.comment_count || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Premium indicator */}
+                    {post.is_premium && (
+                      <div className="absolute top-2 right-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full">
+                        Premium
+                      </div>
+                    )}
+
+                    {/* Multiple media indicator */}
+                    {post.media_urls && post.media_urls.length > 1 && (
+                      <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+                        1/{post.media_urls.length}
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                No {activeTab} yet
-              </h3>
-              <p className="text-gray-600">
-                {activeTab === 'posts' 
-                  ? 'Posts will appear here when they\'re created'
-                  : activeTab === 'saved' 
-                  ? 'Saved posts will appear here'
-                  : 'Liked posts will appear here'
-                }
-              </p>
-            </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">
+                  {activeTab === 'posts' ? '📝' : activeTab === 'saved' ? '🔖' : '❤️'}
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  No {activeTab} yet
+                </h3>
+                <p className="text-gray-600">
+                  {activeTab === 'posts' 
+                    ? 'Posts will appear here when they\'re created'
+                    : activeTab === 'saved' 
+                    ? 'Saved posts will appear here'
+                    : 'Liked posts will appear here'
+                  }
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
