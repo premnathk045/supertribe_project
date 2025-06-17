@@ -10,7 +10,7 @@ import GalleryMode from './modes/GalleryMode'
 import PreviewMode from './modes/PreviewMode'
 import PermissionModal from './components/PermissionModal'
 import { useStoryCreation } from './hooks/useStoryCreation'
-import { useStoryUpload } from '../../hooks/useStoryUpload'
+import { useStoryUpload } from '../../hooks/useStoryUpload.js'
 import { STORY_MODES } from './constants'
 
 function StoryCreationModal({ isOpen, onClose, onPublish }) {
