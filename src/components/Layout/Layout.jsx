@@ -7,9 +7,11 @@ import StoryViewerModal from '../Modals/StoryViewerModal'
 import PostDetailModal from '../Modals/PostDetailModal'
 import ShareSheetModal from '../Modals/ShareSheetModal'
 import StoryCreationModal from '../Stories/StoryCreationModal'
+import { useStories } from '../../hooks/useStories'
 
 function Layout() {
   const location = useLocation()
+  const { addNewStory } = useStories()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [storyViewerOpen, setStoryViewerOpen] = useState(false)
   const [postDetailOpen, setPostDetailOpen] = useState(false)
@@ -20,10 +22,10 @@ function Layout() {
 
   const hideNavigation = location.pathname === '/create' || location.pathname === '/messages'
 
-  const handleStoryPublish = (storyData) => {
-    console.log('Publishing story:', storyData)
-    // Here you would typically send the story data to your backend
-    // For now, we'll just log it
+  const handleStoryPublish = (newStory) => {
+    console.log('Story published:', newStory)
+    // Add the new story to the stories list
+    addNewStory(newStory)
   }
 
   return (

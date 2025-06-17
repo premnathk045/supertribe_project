@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiX } from 'react-icons/fi'
+import { useAuth } from '../../../contexts/AuthContext'
+import { createStory, uploadStoryMedia, generateVideoThumbnail } from '../../../lib/stories'
 import ModalHeader from './components/ModalHeader'
 import BottomTabNavigation from './components/BottomTabNavigation'
 import PhotoMode from './modes/PhotoMode'
@@ -13,6 +15,7 @@ import { useStoryCreation } from './hooks/useStoryCreation'
 import { STORY_MODES } from './constants'
 
 function StoryCreationModal({ isOpen, onClose, onPublish }) {
+  const { user } = useAuth()
   const {
     currentMode,
     setCurrentMode,
@@ -26,6 +29,8 @@ function StoryCreationModal({ isOpen, onClose, onPublish }) {
   } = useStoryCreation()
 
   const [isPreviewMode, setIsPreviewMode] = useState(false)
+  const [isPublishing, setIsPublishing] = useState(false)
+  const [publishError, setPublishError] = useState(null)
   const modalRef = useRef(null)
 
   useEffect(() => {
@@ -35,6 +40,8 @@ function StoryCreationModal({ isOpen, onClose, onPublish }) {
       document.body.style.overflow = 'unset'
       resetStoryData()
       setIsPreviewMode(false)
+      setIsPublishing(false)
+      setPublishError(null)
     }
 
     return () => {
@@ -73,9 +80,83 @@ function StoryCreationModal({ isOpen, onClose, onPublish }) {
     setIsPreviewMode(true)
   }
 
-  const handlePublish = () => {
-    onPublish(storyData)
-    onClose()
+  const handlePublish = async () => {
+    if (!user) {
+      setPublishError('You must be signed in to publish stories')
+      return
+    }
+
+    setIsPublishing(true)
+    setPublishError(null)
+
+    try {
+      let mediaUrl = null
+      let mediaPath = null
+      let thumbnailUrl = null
+      let fileSize = null
+      let fileType = null
+      let duration = null
+
+      // Handle media upload for photo/video/gallery stories
+      if (storyData.media && (storyData.type === 'photo' || storyData.type === 'video' || storyData.type === 'gallery')) {
+        console.log('Uploading media file:', storyData.media)
+        
+        const uploadResult = await uploadStoryMedia(storyData.media, user.id)
+        mediaUrl = uploadResult.url
+        mediaPath = uploadResult.path
+        fileSize = storyData.media.size
+        fileType = storyData.media.type
+
+        // Generate thumbnail for videos
+        if (storyData.type === 'video' && storyData.media.type.startsWith('video/')) {
+          try {
+            const thumbnailBlob = await generateVideoThumbnail(storyData.media)
+            if (thumbnailBlob) {
+              const thumbnailUpload = await uploadStoryMedia(thumbnailBlob, user.id)
+              thumbnailUrl = thumbnailUpload.url
+            }
+          } catch (thumbnailError) {
+            console.warn('Failed to generate video thumbnail:', thumbnailError)
+          }
+        }
+      }
+
+      // Prepare story data for database
+      const storyPayload = {
+        creator_id: user.id,
+        content_type: storyData.type,
+        media_url: mediaUrl,
+        media_path: mediaPath,
+        caption: storyData.caption || null,
+        text_content: storyData.type === 'text' ? storyData.text : null,
+        text_style: storyData.type === 'text' ? storyData.textStyle : {},
+        background_style: storyData.type === 'text' ? storyData.background : {},
+        file_size: fileSize,
+        file_type: fileType,
+        duration: duration,
+        thumbnail_url: thumbnailUrl
+      }
+
+      console.log('Creating story with payload:', storyPayload)
+
+      // Create story in database
+      const newStory = await createStory(storyPayload)
+      
+      console.log('Story created successfully:', newStory)
+
+      // Call the onPublish callback with the new story
+      if (onPublish) {
+        onPublish(newStory)
+      }
+
+      // Close the modal
+      onClose()
+    } catch (error) {
+      console.error('Error publishing story:', error)
+      setPublishError(error.message || 'Failed to publish story. Please try again.')
+    } finally {
+      setIsPublishing(false)
+    }
   }
 
   const renderCurrentMode = () => {
@@ -86,6 +167,8 @@ function StoryCreationModal({ isOpen, onClose, onPublish }) {
           onBack={() => setIsPreviewMode(false)}
           onPublish={handlePublish}
           onUpdateData={updateStoryData}
+          isPublishing={isPublishing}
+          publishError={publishError}
         />
       )
     }

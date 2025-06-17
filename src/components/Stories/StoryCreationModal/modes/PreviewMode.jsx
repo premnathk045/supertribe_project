@@ -1,19 +1,15 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { FiSend, FiDownload, FiEdit3 } from 'react-icons/fi'
+import { FiSend, FiDownload, FiEdit3, FiAlertCircle } from 'react-icons/fi'
 import { TEXT_FONTS } from '../constants'
 
-function PreviewMode({ storyData, onBack, onPublish, onUpdateData }) {
-  const [isPublishing, setIsPublishing] = useState(false)
+function PreviewMode({ storyData, onBack, onPublish, onUpdateData, isPublishing, publishError }) {
+  const [caption, setCaption] = useState(storyData.caption || '')
 
   const handlePublish = async () => {
-    setIsPublishing(true)
-    
-    // Simulate publishing delay
-    setTimeout(() => {
-      onPublish()
-      setIsPublishing(false)
-    }, 1500)
+    // Update story data with caption before publishing
+    onUpdateData({ caption })
+    await onPublish()
   }
 
   const getBackgroundStyle = () => {
@@ -55,7 +51,7 @@ function PreviewMode({ storyData, onBack, onPublish, onUpdateData }) {
           >
             {storyData.text}
           </div>
-        ) : storyData.type === 'photo' ? (
+        ) : storyData.type === 'photo' || storyData.type === 'gallery' ? (
           /* Photo Story */
           <img
             src={storyData.mediaUrl}
@@ -75,32 +71,36 @@ function PreviewMode({ storyData, onBack, onPublish, onUpdateData }) {
         ) : null}
       </div>
 
-      {/* Preview Overlay */}
-      <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
+      {/* Caption Input */}
+      <div className="absolute bottom-32 left-4 right-4 z-10">
+        <div className="bg-black/60 backdrop-blur-sm rounded-xl p-4">
+          <input
+            type="text"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder="Add a caption..."
+            className="w-full bg-transparent text-white placeholder-white/70 border-none outline-none text-sm"
+            maxLength={200}
+          />
+          <div className="text-right mt-1">
+            <span className="text-white/50 text-xs">{caption.length}/200</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {publishError && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center text-white pointer-events-auto"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="absolute top-20 left-4 right-4 z-10"
         >
-          <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-6 max-w-xs">
-            <h3 className="text-lg font-semibold mb-2">Story Preview</h3>
-            <p className="text-sm opacity-90 mb-4">
-              This is how your story will appear to your followers
-            </p>
-            
-            {/* Story Info */}
-            <div className="text-xs opacity-75 space-y-1">
-              <div>Type: {storyData.type}</div>
-              {storyData.duration && (
-                <div>Duration: {Math.round(storyData.duration)}s</div>
-              )}
-              {storyData.text && (
-                <div>Characters: {storyData.text.length}</div>
-              )}
-            </div>
+          <div className="bg-red-500 text-white px-4 py-3 rounded-lg flex items-center space-x-2">
+            <FiAlertCircle className="text-lg flex-shrink-0" />
+            <p className="text-sm">{publishError}</p>
           </div>
         </motion.div>
-      </div>
+      )}
 
       {/* Action Buttons */}
       <div className="absolute bottom-8 left-0 right-0 px-6">
@@ -109,7 +109,8 @@ function PreviewMode({ storyData, onBack, onPublish, onUpdateData }) {
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={onBack}
-            className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm border border-white/30 flex items-center justify-center"
+            disabled={isPublishing}
+            className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm border border-white/30 flex items-center justify-center disabled:opacity-50"
           >
             <FiEdit3 className="text-white text-xl" />
           </motion.button>
@@ -117,7 +118,8 @@ function PreviewMode({ storyData, onBack, onPublish, onUpdateData }) {
           {/* Download Button */}
           <motion.button
             whileTap={{ scale: 0.9 }}
-            className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm border border-white/30 flex items-center justify-center"
+            disabled={isPublishing}
+            className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm border border-white/30 flex items-center justify-center disabled:opacity-50"
           >
             <FiDownload className="text-white text-xl" />
           </motion.button>
