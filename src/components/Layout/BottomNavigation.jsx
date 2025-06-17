@@ -1,17 +1,19 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { FiHome, FiSearch, FiPlusSquare, FiUser, FiMessageCircle } from 'react-icons/fi'
 import { motion } from 'framer-motion'
-
-const navItems = [
-  { path: '/', icon: FiHome, label: 'Home' },
-  { path: '/discover', icon: FiSearch, label: 'Discover' },
-  { path: '/create', icon: FiPlusSquare, label: 'Create' },
-  { path: '/messages', icon: FiMessageCircle, label: 'Messages' },
-  { path: '/profile/johndoe', icon: FiUser, label: 'Profile' }
-]
+import { useAuth } from '../../contexts/AuthContext'
 
 function BottomNavigation() {
   const location = useLocation()
+  const { userProfile, isCreator } = useAuth()
+
+  const navItems = [
+    { path: '/', icon: FiHome, label: 'Home' },
+    { path: '/discover', icon: FiSearch, label: 'Discover' },
+    ...(isCreator() ? [{ path: '/create', icon: FiPlusSquare, label: 'Create' }] : []),
+    { path: '/messages', icon: FiMessageCircle, label: 'Messages' },
+    { path: `/profile/${userProfile?.username || 'profile'}`, icon: FiUser, label: 'Profile' }
+  ]
 
   return (
     <motion.nav 

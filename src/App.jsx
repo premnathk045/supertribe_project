@@ -9,6 +9,8 @@ import NotificationsPage from './pages/NotificationsPage'
 import ProfilePage from './pages/ProfilePage'
 import MessagesPage from './pages/MessagesPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import CreatorVerificationPage from './pages/CreatorVerificationPage'
+import CreatorDashboardPage from './pages/CreatorDashboardPage'
 import ProtectedRoute from './components/Auth/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -20,6 +22,16 @@ function App() {
           <AnimatePresence mode="wait">
             <Routes>
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/creator-verification" element={
+                <ProtectedRoute>
+                  <CreatorVerificationPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/creator-dashboard" element={
+                <ProtectedRoute requiredRole="creator">
+                  <CreatorDashboardPage />
+                </ProtectedRoute>
+              } />
               <Route path="/" element={<Layout />}>
                 <Route index element={
                   <ProtectedRoute requireAuth={false}>
@@ -32,7 +44,7 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="create" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRole="creator">
                     <CreatePostPage />
                   </ProtectedRoute>
                 } />

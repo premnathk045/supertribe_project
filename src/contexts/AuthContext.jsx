@@ -13,14 +13,41 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
+  const [userProfile, setUserProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [session, setSession] = useState(null)
 
+  const fetchUserProfile = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+      if (error) {
+        console.error('Error fetching user profile:', error)
+        return null
+      }
+
+      return data
+    } catch (error) {
+      console.error('Error fetching user profile:', error)
+      return null
+    }
+  }
+
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
+      
+      if (session?.user) {
+        const profile = await fetchUserProfile(session.user.id)
+        setUserProfile(profile)
+      }
+      
       setLoading(false)
     })
 
@@ -30,6 +57,14 @@ export const AuthProvider = ({ children }) => {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
+      
+      if (session?.user) {
+        const profile = await fetchUserProfile(session.user.id)
+        setUserProfile(profile)
+      } else {
+        setUserProfile(null)
+      }
+      
       setLoading(false)
     })
 
@@ -41,13 +76,51 @@ export const AuthProvider = ({ children }) => {
     if (error) {
       console.error('Error signing out:', error)
     }
+    setUserProfile(null)
+  }
+
+  const updateUserProfile = async (updates) => {
+    if (!user) return { error: 'No user logged in' }
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating profile:', error)
+        return { error }
+      }
+
+      setUserProfile(data)
+      return { data }
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      return { error }
+    }
+  }
+
+  const isCreator = () => {
+    return userProfile?.user_type === 'creator' && userProfile?.is_verified === true
+  }
+
+  const isFan = () => {
+    return userProfile?.user_type === 'fan' || !userProfile?.is_verified
   }
 
   const value = {
     user,
+    userProfile,
     session,
     loading,
-    signOut
+    signOut,
+    updateUserProfile,
+    isCreator,
+    isFan,
+    fetchUserProfile
   }
 
   return (

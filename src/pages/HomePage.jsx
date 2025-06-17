@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion'
 import { useOutletContext } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import StoriesCarousel from '../components/Stories/StoriesCarousel'
 import PostFeed from '../components/Feed/PostFeed'
 
 function HomePage() {
   const { openStoryViewer, openPostDetail, openShareSheet, openStoryCreation } = useOutletContext()
+  const { isCreator } = useAuth()
 
   return (
     <motion.div
@@ -17,7 +19,7 @@ function HomePage() {
       <div className="bg-white border-b border-gray-200 sticky top-16 z-30">
         <StoriesCarousel 
           onStoryClick={openStoryViewer}
-          onCreateStory={openStoryCreation}
+          onCreateStory={isCreator() ? openStoryCreation : undefined}
         />
       </div>
 

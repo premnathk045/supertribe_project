@@ -11,7 +11,9 @@ export const users = [
     followingCount: 892,
     postCount: 234,
     isOnline: true,
-    isPremium: true
+    isPremium: true,
+    user_type: 'creator',
+    is_verified: true
   },
   {
     id: 2,
@@ -24,7 +26,9 @@ export const users = [
     followingCount: 456,
     postCount: 189,
     isOnline: false,
-    isPremium: true
+    isPremium: true,
+    user_type: 'creator',
+    is_verified: true
   },
   {
     id: 3,
@@ -37,7 +41,24 @@ export const users = [
     followingCount: 234,
     postCount: 567,
     isOnline: true,
-    isPremium: false
+    isPremium: false,
+    user_type: 'fan',
+    is_verified: false
+  },
+  {
+    id: 4,
+    username: 'fanuser',
+    displayName: 'Fan User',
+    avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=150',
+    bio: 'Just here to enjoy great content! 😊',
+    isVerified: false,
+    followerCount: 120,
+    followingCount: 340,
+    postCount: 0,
+    isOnline: true,
+    isPremium: false,
+    user_type: 'fan',
+    is_verified: false
   }
 ]
 
@@ -90,28 +111,6 @@ export const posts = [
     isSaved: true,
     createdAt: new Date('2024-01-14T15:45:00'),
     tags: ['photography', 'behind-the-scenes', 'premium']
-  },
-  {
-    id: 3,
-    userId: 3,
-    user: users[2],
-    content: 'Tech review of the latest smartphone is live! Check out my thoughts on this game-changing device.',
-    media: [
-      {
-        type: 'video',
-        url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-        thumbnail: 'https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=300'
-      }
-    ],
-    isPremium: false,
-    price: null,
-    likeCount: 892,
-    commentCount: 67,
-    shareCount: 34,
-    isLiked: false,
-    isSaved: false,
-    createdAt: new Date('2024-01-13T12:20:00'),
-    tags: ['tech', 'review', 'smartphone']
   }
 ]
 
@@ -137,17 +136,6 @@ export const stories = [
     },
     isViewed: true,
     createdAt: new Date('2024-01-15T09:30:00')
-  },
-  {
-    id: 3,
-    userId: 3,
-    user: users[2],
-    media: {
-      type: 'image',
-      url: 'https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=400'
-    },
-    isViewed: false,
-    createdAt: new Date('2024-01-15T11:15:00')
   }
 ]
 
