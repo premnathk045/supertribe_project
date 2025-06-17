@@ -85,12 +85,12 @@ function ProfilePage() {
         avatar_url: profile.avatar_url || ''
       })
 
-      // Fetch user's posts
+      // Fetch user's posts - Fixed query to properly join through auth.users
       const { data: posts, error: postsError } = await supabase
         .from('posts')
         .select(`
           *,
-          profiles!posts_user_id_fkey (
+          profiles!inner(
             username,
             display_name,
             avatar_url,
@@ -103,6 +103,8 @@ function ProfilePage() {
 
       if (postsError) {
         console.error('Error fetching posts:', postsError)
+        // Don't set error here, just log it and continue with empty posts
+        setUserPosts([])
       } else {
         setUserPosts(posts || [])
       }
