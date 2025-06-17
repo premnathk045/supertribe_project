@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { 
@@ -8,24 +8,248 @@ import {
   FiGrid, 
   FiBookmark,
   FiHeart,
-  FiMoreHorizontal
+  FiMoreHorizontal,
+  FiEdit3,
+  FiSave,
+  FiX,
+  FiCamera
 } from 'react-icons/fi'
-import { users, posts } from '../data/dummyData'
+import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
+import LoadingSpinner from '../components/UI/LoadingSpinner'
+import { validateUsername } from '../utils/validation'
 
 function ProfilePage() {
   const { username } = useParams()
-  const [activeTab, setActiveTab] = useState('posts')
+  const { user, userProfile, updateUserProfile } = useAuth()
+  const [profileData, setProfileData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [isFollowing, setIsFollowing] = useState(false)
+  const [activeTab, setActiveTab] = useState('posts')
   
-  // Find user by username
-  const user = users.find(u => u.username === username) || users[0]
-  const userPosts = posts.filter(post => post.user.username === username)
+  // Edit form state
+  const [editForm, setEditForm] = useState({
+    username: '',
+    display_name: '',
+    bio: '',
+    avatar_url: ''
+  })
+  const [editErrors, setEditErrors] = useState({})
+
+  const isOwnProfile = user && profileData && user.id === profileData.id
+
+  useEffect(() => {
+    if (username) {
+      fetchProfileData()
+    }
+  }, [username])
+
+  const fetchProfileData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('username', username)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          setError('Profile not found')
+        } else {
+          setError('Failed to load profile')
+        }
+        console.error('Error fetching profile:', error)
+        return
+      }
+
+      setProfileData(data)
+      
+      // Initialize edit form with current data
+      setEditForm({
+        username: data.username || '',
+        display_name: data.display_name || '',
+        bio: data.bio || '',
+        avatar_url: data.avatar_url || ''
+      })
+
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+      setError('An unexpected error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const validateEditForm = () => {
+    const errors = {}
+
+    // Username validation
+    if (!editForm.username.trim()) {
+      errors.username = 'Username is required'
+    } else if (!validateUsername(editForm.username)) {
+      errors.username = 'Username must be 3-20 characters, letters, numbers, and underscores only'
+    }
+
+    // Display name validation
+    if (!editForm.display_name.trim()) {
+      errors.display_name = 'Display name is required'
+    } else if (editForm.display_name.length < 2) {
+      errors.display_name = 'Display name must be at least 2 characters'
+    }
+
+    // Bio validation
+    if (editForm.bio && editForm.bio.length > 500) {
+      errors.bio = 'Bio must be less than 500 characters'
+    }
+
+    // Avatar URL validation (basic)
+    if (editForm.avatar_url && editForm.avatar_url.trim()) {
+      try {
+        new URL(editForm.avatar_url)
+        // Basic image URL validation
+        if (!editForm.avatar_url.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+          errors.avatar_url = 'Avatar URL must be a valid image URL'
+        }
+      } catch {
+        errors.avatar_url = 'Please enter a valid URL'
+      }
+    }
+
+    setEditErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const handleEditInputChange = (field, value) => {
+    setEditForm(prev => ({ ...prev, [field]: value }))
+    
+    // Clear error when user starts typing
+    if (editErrors[field]) {
+      setEditErrors(prev => ({ ...prev, [field]: '' }))
+    }
+  }
+
+  const handleSaveProfile = async () => {
+    if (!validateEditForm()) {
+      return
+    }
+
+    setSaving(true)
+    setError(null)
+
+    try {
+      // Check if username is already taken (if changed)
+      if (editForm.username !== profileData.username) {
+        const { data: existingUser } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('username', editForm.username)
+          .single()
+
+        if (existingUser) {
+          setEditErrors({ username: 'Username is already taken' })
+          setSaving(false)
+          return
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          username: editForm.username,
+          display_name: editForm.display_name,
+          bio: editForm.bio,
+          avatar_url: editForm.avatar_url || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', profileData.id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating profile:', error)
+        setError('Failed to update profile')
+        return
+      }
+
+      // Update local state
+      setProfileData(data)
+      setIsEditing(false)
+
+      // Update auth context if this is the current user's profile
+      if (isOwnProfile) {
+        await updateUserProfile({
+          username: data.username,
+          display_name: data.display_name,
+          bio: data.bio,
+          avatar_url: data.avatar_url
+        })
+      }
+
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      setError('An unexpected error occurred')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditing(false)
+    setEditErrors({})
+    // Reset form to original data
+    setEditForm({
+      username: profileData.username || '',
+      display_name: profileData.display_name || '',
+      bio: profileData.bio || '',
+      avatar_url: profileData.avatar_url || ''
+    })
+  }
 
   const tabs = [
     { id: 'posts', label: 'Posts', icon: FiGrid },
     { id: 'saved', label: 'Saved', icon: FiBookmark },
     { id: 'liked', label: 'Liked', icon: FiHeart }
   ]
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-6">😕</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            {error}
+          </h1>
+          <p className="text-gray-600 mb-6">
+            The profile you're looking for doesn't exist or couldn't be loaded.
+          </p>
+          <button
+            onClick={() => window.history.back()}
+            className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!profileData) {
+    return null
+  }
 
   return (
     <motion.div
@@ -35,47 +259,111 @@ function ProfilePage() {
       className="min-h-screen bg-gray-50"
     >
       <div className="max-w-lg mx-auto">
+        {/* Error Display */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mx-4 mt-4"
+          >
+            {error}
+          </motion.div>
+        )}
+
         {/* Profile Header */}
         <div className="bg-white border-b border-gray-200">
           <div className="p-6">
             {/* Avatar and Stats */}
             <div className="flex items-center space-x-6 mb-6">
               <div className="relative">
-                <img
-                  src={user.avatar}
-                  alt={user.displayName}
-                  className="w-20 h-20 rounded-full object-cover"
-                />
-                {user.isOnline && (
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-3 border-white rounded-full"></div>
+                {isEditing ? (
+                  <div className="relative">
+                    <img
+                      src={editForm.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150'}
+                      alt={editForm.display_name}
+                      className="w-20 h-20 rounded-full object-cover"
+                      onError={(e) => {
+                        e.target.src = 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150'
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                      <FiCamera className="text-white text-xl" />
+                    </div>
+                  </div>
+                ) : (
+                  <img
+                    src={profileData.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150'}
+                    alt={profileData.display_name}
+                    className="w-20 h-20 rounded-full object-cover"
+                    onError={(e) => {
+                      e.target.src = 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150'
+                    }}
+                  />
+                )}
+                {profileData.user_type === 'creator' && profileData.is_verified && (
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 border-3 border-white rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">✓</span>
+                  </div>
                 )}
               </div>
               
               <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
-                  <h1 className="text-xl font-bold text-gray-900">{user.displayName}</h1>
-                  {user.isVerified && (
-                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                {isEditing ? (
+                  <div className="space-y-3">
+                    <div>
+                      <input
+                        type="text"
+                        value={editForm.display_name}
+                        onChange={(e) => handleEditInputChange('display_name', e.target.value)}
+                        className={`text-xl font-bold bg-transparent border-b-2 focus:outline-none transition-colors ${
+                          editErrors.display_name ? 'border-red-500' : 'border-gray-300 focus:border-primary-500'
+                        }`}
+                        placeholder="Display Name"
+                      />
+                      {editErrors.display_name && (
+                        <p className="text-red-500 text-xs mt-1">{editErrors.display_name}</p>
+                      )}
                     </div>
-                  )}
-                  {user.isPremium && (
-                    <div className="w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
-                  )}
-                </div>
-                <p className="text-gray-600 mb-3">@{user.username}</p>
+                    <div>
+                      <input
+                        type="text"
+                        value={editForm.username}
+                        onChange={(e) => handleEditInputChange('username', e.target.value.toLowerCase())}
+                        className={`text-gray-600 bg-transparent border-b focus:outline-none transition-colors ${
+                          editErrors.username ? 'border-red-500' : 'border-gray-300 focus:border-primary-500'
+                        }`}
+                        placeholder="@username"
+                      />
+                      {editErrors.username && (
+                        <p className="text-red-500 text-xs mt-1">{editErrors.username}</p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <h1 className="text-xl font-bold text-gray-900">{profileData.display_name}</h1>
+                      {profileData.user_type === 'creator' && profileData.is_verified && (
+                        <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs">✓</span>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-gray-600 mb-3">@{profileData.username}</p>
+                  </div>
+                )}
                 
                 <div className="flex space-x-6 text-sm">
                   <div className="text-center">
-                    <div className="font-bold text-gray-900">{user.postCount}</div>
+                    <div className="font-bold text-gray-900">0</div>
                     <div className="text-gray-600">Posts</div>
                   </div>
                   <div className="text-center">
-                    <div className="font-bold text-gray-900">{user.followerCount.toLocaleString()}</div>
+                    <div className="font-bold text-gray-900">0</div>
                     <div className="text-gray-600">Followers</div>
                   </div>
                   <div className="text-center">
-                    <div className="font-bold text-gray-900">{user.followingCount}</div>
+                    <div className="font-bold text-gray-900">0</div>
                     <div className="text-gray-600">Following</div>
                   </div>
                 </div>
@@ -83,15 +371,96 @@ function ProfilePage() {
             </div>
 
             {/* Bio */}
-            <p className="text-gray-900 mb-6 leading-relaxed">{user.bio}</p>
+            {isEditing ? (
+              <div className="mb-6">
+                <textarea
+                  value={editForm.bio}
+                  onChange={(e) => handleEditInputChange('bio', e.target.value)}
+                  rows={3}
+                  className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none ${
+                    editErrors.bio ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                  placeholder="Tell people about yourself..."
+                />
+                <div className="flex justify-between items-center mt-1">
+                  {editErrors.bio ? (
+                    <p className="text-red-500 text-xs">{editErrors.bio}</p>
+                  ) : (
+                    <div></div>
+                  )}
+                  <p className={`text-xs ${editForm.bio.length > 500 ? 'text-red-500' : 'text-gray-500'}`}>
+                    {editForm.bio.length}/500
+                  </p>
+                </div>
+                
+                {/* Avatar URL Input */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Avatar URL
+                  </label>
+                  <input
+                    type="url"
+                    value={editForm.avatar_url}
+                    onChange={(e) => handleEditInputChange('avatar_url', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all ${
+                      editErrors.avatar_url ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    }`}
+                    placeholder="https://example.com/avatar.jpg"
+                  />
+                  {editErrors.avatar_url && (
+                    <p className="text-red-500 text-xs mt-1">{editErrors.avatar_url}</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="mb-6">
+                <p className="text-gray-900 leading-relaxed">
+                  {profileData.bio || 'No bio available.'}
+                </p>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex space-x-3">
-              {username === 'johndoe' ? (
-                <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2">
-                  <FiSettings className="text-lg" />
-                  <span>Edit Profile</span>
-                </button>
+              {isOwnProfile ? (
+                isEditing ? (
+                  <>
+                    <button
+                      onClick={handleSaveProfile}
+                      disabled={saving}
+                      className="flex-1 bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+                    >
+                      {saving ? (
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                          className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                        />
+                      ) : (
+                        <>
+                          <FiSave className="text-lg" />
+                          <span>Save</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      disabled={saving}
+                      className="bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 text-gray-900 py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <FiX className="text-lg" />
+                      <span>Cancel</span>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <FiEdit3 className="text-lg" />
+                    <span>Edit Profile</span>
+                  </button>
+                )
               ) : (
                 <>
                   <button
@@ -119,119 +488,48 @@ function ProfilePage() {
             </div>
           </div>
 
-          {/* Highlights */}
-          <div className="px-6 pb-4">
-            <div className="flex space-x-4 overflow-x-auto scrollbar-hide">
-              <div className="flex flex-col items-center space-y-2 flex-shrink-0">
-                <div className="w-16 h-16 bg-gray-200 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center">
-                  <span className="text-2xl">+</span>
-                </div>
-                <span className="text-xs text-gray-600">New</span>
-              </div>
-              
-              {[1, 2, 3].map((highlight) => (
-                <div key={highlight} className="flex flex-col items-center space-y-2 flex-shrink-0">
-                  <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full p-0.5">
-                    <div className="w-full h-full bg-white rounded-full p-0.5">
-                      <img
-                        src={`https://images.pexels.com/photos/${1000000 + highlight}/pexels-photo-${1000000 + highlight}.jpeg?auto=compress&cs=tinysrgb&w=100`}
-                        alt={`Highlight ${highlight}`}
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    </div>
-                  </div>
-                  <span className="text-xs text-gray-600">Story {highlight}</span>
-                </div>
+          {/* Tabs */}
+          {!isEditing && (
+            <div className="flex border-t border-gray-200">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 py-3 flex items-center justify-center space-x-2 border-b-2 transition-colors ${
+                    activeTab === tab.id
+                      ? 'border-primary-500 text-primary-500'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <tab.icon className="text-lg" />
+                  <span className="font-medium">{tab.label}</span>
+                </button>
               ))}
             </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex border-t border-gray-200">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-3 flex items-center justify-center space-x-2 border-b-2 transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-primary-500 text-primary-500'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <tab.icon className="text-lg" />
-                <span className="font-medium">{tab.label}</span>
-              </button>
-            ))}
-          </div>
+          )}
         </div>
 
         {/* Content Grid */}
-        <div className="p-4">
-          {activeTab === 'posts' && (
-            <div className="grid grid-cols-3 gap-1">
-              {userPosts.map((post, index) => (
-                <motion.div
-                  key={post.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative group cursor-pointer"
-                >
-                  <img
-                    src={post.media[0]?.url}
-                    alt="Post"
-                    className="w-full h-full object-cover"
-                  />
-                  
-                  {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="flex items-center space-x-4 text-white">
-                      <div className="flex items-center space-x-1">
-                        <FiHeart className="fill-current" />
-                        <span className="font-medium">{post.likeCount}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <FiMessageCircle />
-                        <span className="font-medium">{post.commentCount}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Premium indicator */}
-                  {post.isPremium && (
-                    <div className="absolute top-2 right-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full">
-                      Premium
-                    </div>
-                  )}
-
-                  {/* Multiple media indicator */}
-                  {post.media.length > 1 && (
-                    <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
-                      1/{post.media.length}
-                    </div>
-                  )}
-                </motion.div>
-              ))}
-            </div>
-          )}
-
-          {(activeTab === 'saved' || activeTab === 'liked') && (
+        {!isEditing && (
+          <div className="p-4">
             <div className="text-center py-12">
               <div className="text-6xl mb-4">
-                {activeTab === 'saved' ? '🔖' : '❤️'}
+                {activeTab === 'posts' ? '📝' : activeTab === 'saved' ? '🔖' : '❤️'}
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                No {activeTab} posts yet
+                No {activeTab} yet
               </h3>
               <p className="text-gray-600">
-                {activeTab === 'saved' 
-                  ? 'Posts you save will appear here'
-                  : 'Posts you like will appear here'
+                {activeTab === 'posts' 
+                  ? 'Posts will appear here when they\'re created'
+                  : activeTab === 'saved' 
+                  ? 'Saved posts will appear here'
+                  : 'Liked posts will appear here'
                 }
               </p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </motion.div>
   )
