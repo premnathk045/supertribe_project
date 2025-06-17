@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -7,6 +7,7 @@ export const useStories = () => {
   const [stories, setStories] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const channelRef = useRef(null)
 
   // Fetch stories from database
   const fetchStories = useCallback(async () => {
@@ -18,7 +19,7 @@ export const useStories = () => {
         .from('stories')
         .select(`
           *,
-          profiles:creator_id (
+          profiles!stories_creator_id_fkey (
             username,
             display_name,
             avatar_url,
@@ -191,25 +192,31 @@ export const useStories = () => {
   useEffect(() => {
     fetchStories()
 
-    // Subscribe to story changes
-    const subscription = supabase
-      .channel('stories_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'stories'
-        },
-        (payload) => {
-          console.log('Story change detected:', payload)
-          fetchStories() // Refetch stories on any change
-        }
-      )
-      .subscribe()
+    // Only create and subscribe to channel if it doesn't exist
+    if (!channelRef.current) {
+      channelRef.current = supabase
+        .channel('stories_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'stories'
+          },
+          (payload) => {
+            console.log('Story change detected:', payload)
+            fetchStories() // Refetch stories on any change
+          }
+        )
+        .subscribe()
+    }
 
     return () => {
-      subscription.unsubscribe()
+      // Clean up the channel when component unmounts
+      if (channelRef.current) {
+        channelRef.current.unsubscribe()
+        channelRef.current = null
+      }
     }
   }, [fetchStories])
 
