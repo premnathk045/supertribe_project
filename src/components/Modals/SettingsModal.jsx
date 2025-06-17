@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiX, FiUser, FiLock, FiBell, FiCreditCard, FiStar, FiHelpCircle } from 'react-icons/fi'
+import { FiX, FiUser, FiLock, FiBell, FiCreditCard, FiStar, FiHelpCircle, FiLogOut } from 'react-icons/fi'
+import { useAuth } from '../../contexts/AuthContext'
 
 const settingsSections = [
   { icon: FiUser, title: 'Account Settings', description: 'Manage your account details' },
@@ -11,6 +12,13 @@ const settingsSections = [
 ]
 
 function SettingsModal({ isOpen, onClose }) {
+  const { user, signOut } = useAuth()
+
+  const handleSignOut = async () => {
+    await signOut()
+    onClose()
+  }
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -40,6 +48,25 @@ function SettingsModal({ isOpen, onClose }) {
               </button>
             </div>
 
+            {/* User Info */}
+            {user && (
+              <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-semibold text-lg">
+                      {user.user_metadata?.full_name?.charAt(0) || user.email?.charAt(0)}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      {user.user_metadata?.full_name || 'User'}
+                    </h3>
+                    <p className="text-sm text-gray-600">{user.email}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Settings Options */}
             <div className="space-y-3">
               {settingsSections.map((section, index) => (
@@ -63,6 +90,29 @@ function SettingsModal({ isOpen, onClose }) {
                   </div>
                 </motion.button>
               ))}
+
+              {/* Sign Out Button */}
+              {user && (
+                <motion.button
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: settingsSections.length * 0.1 }}
+                  whileHover={{ x: 4 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleSignOut}
+                  className="w-full p-4 bg-red-50 hover:bg-red-100 rounded-xl transition-colors text-left"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="p-2 bg-white rounded-lg">
+                      <FiLogOut className="text-xl text-red-500" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-red-700">Sign Out</h3>
+                      <p className="text-sm text-red-600">Sign out of your account</p>
+                    </div>
+                  </div>
+                </motion.button>
+              )}
             </div>
 
             {/* Version Info */}
