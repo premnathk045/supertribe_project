@@ -54,11 +54,12 @@ export const createStory = async (storyData) => {
       }])
       .select(`
         *,
-        profiles!stories_creator_id_fkey (
+        profiles!creator_id (
           username,
           display_name,
           avatar_url,
-          is_verified
+          is_verified,
+          user_type
         )
       `)
       .single()
@@ -82,7 +83,7 @@ export const fetchActiveStories = async () => {
       .from('stories')
       .select(`
         *,
-        profiles!stories_creator_id_fkey (
+        profiles!creator_id (
           username,
           display_name,
           avatar_url,
@@ -145,7 +146,7 @@ export const getStoryViews = async (creatorId) => {
       .select(`
         *,
         stories!inner (creator_id),
-        profiles!story_views_viewer_id_fkey (
+        profiles!viewer_id (
           username,
           display_name,
           avatar_url
