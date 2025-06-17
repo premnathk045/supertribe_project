@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiX } from 'react-icons/fi'
+import { FiX, FiCheck, FiUpload } from 'react-icons/fi'
 import ModalHeader from './components/ModalHeader'
 import BottomTabNavigation from './components/BottomTabNavigation'
 import PhotoMode from './modes/PhotoMode'
@@ -10,6 +10,7 @@ import GalleryMode from './modes/GalleryMode'
 import PreviewMode from './modes/PreviewMode'
 import PermissionModal from './components/PermissionModal'
 import { useStoryCreation } from './hooks/useStoryCreation'
+import { useStoryUpload } from '../../hooks/useStoryUpload'
 import { STORY_MODES } from './constants'
 
 function StoryCreationModal({ isOpen, onClose, onPublish }) {
@@ -25,7 +26,10 @@ function StoryCreationModal({ isOpen, onClose, onPublish }) {
     setShowPermissionModal
   } = useStoryCreation()
 
+  const { uploadStory, uploading, progress, error: uploadError, reset: resetUpload } = useStoryUpload()
+
   const [isPreviewMode, setIsPreviewMode] = useState(false)
+  const [publishError, setPublishError] = useState(null)
   const modalRef = useRef(null)
 
   useEffect(() => {
@@ -34,13 +38,15 @@ function StoryCreationModal({ isOpen, onClose, onPublish }) {
     } else {
       document.body.style.overflow = 'unset'
       resetStoryData()
+      resetUpload()
       setIsPreviewMode(false)
+      setPublishError(null)
     }
 
     return () => {
       document.body.style.overflow = 'unset'
     }
-  }, [isOpen, resetStoryData])
+  }, [isOpen, resetStoryData, resetUpload])
 
   const handleClose = () => {
     if (isPreviewMode) {
@@ -73,9 +79,17 @@ function StoryCreationModal({ isOpen, onClose, onPublish }) {
     setIsPreviewMode(true)
   }
 
-  const handlePublish = () => {
-    onPublish(storyData)
-    onClose()
+  const handlePublish = async () => {
+    setPublishError(null)
+    
+    try {
+      const publishedStory = await uploadStory(storyData)
+      onPublish(publishedStory)
+      onClose()
+    } catch (error) {
+      console.error('Error publishing story:', error)
+      setPublishError(error.message)
+    }
   }
 
   const renderCurrentMode = () => {
@@ -86,6 +100,9 @@ function StoryCreationModal({ isOpen, onClose, onPublish }) {
           onBack={() => setIsPreviewMode(false)}
           onPublish={handlePublish}
           onUpdateData={updateStoryData}
+          uploading={uploading}
+          progress={progress}
+          error={publishError || uploadError}
         />
       )
     }
@@ -141,7 +158,54 @@ function StoryCreationModal({ isOpen, onClose, onPublish }) {
             onClose={handleClose}
             isPreviewMode={isPreviewMode}
             currentMode={currentMode}
+            uploading={uploading}
+            progress={progress}
           />
+
+          {/* Upload Progress Bar */}
+          {uploading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute top-16 left-0 right-0 z-30"
+            >
+              <div className="bg-black/50 backdrop-blur-sm p-4">
+                <div className="max-w-md mx-auto">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white text-sm font-medium">
+                      Uploading story...
+                    </span>
+                    <span className="text-white text-sm">
+                      {Math.round(progress)}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-white/20 rounded-full h-2">
+                    <motion.div
+                      className="bg-white rounded-full h-2"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress}%` }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Error Display */}
+          {(publishError || uploadError) && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="absolute top-20 left-4 right-4 z-30"
+            >
+              <div className="bg-red-500 text-white px-4 py-3 rounded-lg text-center">
+                <p className="text-sm font-medium">
+                  {publishError || uploadError}
+                </p>
+              </div>
+            </motion.div>
+          )}
 
           {/* Main Content */}
           <div className="flex-1 h-full relative overflow-hidden">
@@ -160,7 +224,7 @@ function StoryCreationModal({ isOpen, onClose, onPublish }) {
           </div>
 
           {/* Bottom Navigation */}
-          {!isPreviewMode && (
+          {!isPreviewMode && !uploading && (
             <BottomTabNavigation
               currentMode={currentMode}
               onModeChange={handleModeChange}
