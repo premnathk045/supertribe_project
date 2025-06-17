@@ -11,6 +11,7 @@ import MessagesPage from './pages/MessagesPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import CreatorVerificationPage from './pages/CreatorVerificationPage'
 import CreatorDashboardPage from './pages/CreatorDashboardPage'
+import StorageDebugPage from './pages/StorageDebugPage'
 import ProtectedRoute from './components/Auth/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -22,6 +23,7 @@ function App() {
           <AnimatePresence mode="wait">
             <Routes>
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/storage-debug" element={<StorageDebugPage />} />
               <Route path="/creator-verification" element={
                 <ProtectedRoute>
                   <CreatorVerificationPage />
