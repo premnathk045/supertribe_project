@@ -3,10 +3,10 @@ import { useState } from 'react'
 import TopNavigation from './TopNavigation'
 import BottomNavigation from './BottomNavigation'
 import SettingsModal from '../Modals/SettingsModal'
+import StoryViewerModal from '../Modals/StoryViewerModal'
 import PostDetailModal from '../Modals/PostDetailModal'
 import ShareSheetModal from '../Modals/ShareSheetModal'
 import StoryCreationModal from '../Stories/StoryCreationModal'
-import StoryViewer from '../Stories/StoryViewer'
 
 function Layout() {
   const location = useLocation()
@@ -15,14 +15,15 @@ function Layout() {
   const [postDetailOpen, setPostDetailOpen] = useState(false)
   const [shareSheetOpen, setShareSheetOpen] = useState(false)
   const [storyCreationOpen, setStoryCreationOpen] = useState(false)
-  const [selectedStoryGroup, setSelectedStoryGroup] = useState(null)
+  const [selectedStory, setSelectedStory] = useState(null)
   const [selectedPost, setSelectedPost] = useState(null)
 
   const hideNavigation = location.pathname === '/create' || location.pathname === '/messages'
 
   const handleStoryPublish = (storyData) => {
-    console.log('Story published successfully:', storyData)
-    // The story will automatically appear in the carousel via real-time subscription
+    console.log('Publishing story:', storyData)
+    // Here you would typically send the story data to your backend
+    // For now, we'll just log it
   }
 
   return (
@@ -33,8 +34,8 @@ function Layout() {
       
       <main className={`${!hideNavigation ? 'pt-16 pb-20' : ''} transition-all duration-300`}>
         <Outlet context={{
-          openStoryViewer: (storyGroup) => {
-            setSelectedStoryGroup(storyGroup)
+          openStoryViewer: (story) => {
+            setSelectedStory(story)
             setStoryViewerOpen(true)
           },
           openPostDetail: (post) => {
@@ -54,12 +55,12 @@ function Layout() {
         onClose={() => setSettingsOpen(false)} 
       />
       
-      <StoryViewer
+      <StoryViewerModal
         isOpen={storyViewerOpen}
-        storyGroup={selectedStoryGroup}
+        story={selectedStory}
         onClose={() => {
           setStoryViewerOpen(false)
-          setSelectedStoryGroup(null)
+          setSelectedStory(null)
         }}
       />
       

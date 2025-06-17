@@ -1,23 +1,19 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { FiSend, FiDownload, FiEdit3, FiX } from 'react-icons/fi'
+import { FiSend, FiDownload, FiEdit3 } from 'react-icons/fi'
 import { TEXT_FONTS } from '../constants'
 
-function PreviewMode({ 
-  storyData, 
-  onBack, 
-  onPublish, 
-  onUpdateData, 
-  uploading, 
-  progress, 
-  error 
-}) {
-  const [caption, setCaption] = useState(storyData.caption || '')
+function PreviewMode({ storyData, onBack, onPublish, onUpdateData }) {
+  const [isPublishing, setIsPublishing] = useState(false)
 
   const handlePublish = async () => {
-    // Update story data with caption before publishing
-    onUpdateData({ caption })
-    await onPublish()
+    setIsPublishing(true)
+    
+    // Simulate publishing delay
+    setTimeout(() => {
+      onPublish()
+      setIsPublishing(false)
+    }, 1500)
   }
 
   const getBackgroundStyle = () => {
@@ -43,9 +39,9 @@ function PreviewMode({
   }
 
   return (
-    <div className="h-full relative bg-black flex flex-col">
+    <div className="h-full relative bg-black">
       {/* Content Preview */}
-      <div className="flex-1 flex items-center justify-center" style={getBackgroundStyle()}>
+      <div className="w-full h-full flex items-center justify-center" style={getBackgroundStyle()}>
         {storyData.type === 'text' ? (
           /* Text Story */
           <div
@@ -79,107 +75,76 @@ function PreviewMode({
         ) : null}
       </div>
 
-      {/* Caption Input */}
-      {!uploading && (
+      {/* Preview Overlay */}
+      <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
         <motion.div
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="bg-black/80 backdrop-blur-sm p-4"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center text-white pointer-events-auto"
         >
-          <div className="max-w-md mx-auto">
-            <input
-              type="text"
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              placeholder="Add a caption..."
-              className="w-full bg-white/10 text-white placeholder-white/60 px-4 py-3 rounded-full focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
-              maxLength={200}
-            />
-            <div className="flex justify-between items-center mt-2">
-              <span className="text-white/60 text-xs">
-                {caption.length}/200
-              </span>
+          <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-6 max-w-xs">
+            <h3 className="text-lg font-semibold mb-2">Story Preview</h3>
+            <p className="text-sm opacity-90 mb-4">
+              This is how your story will appear to your followers
+            </p>
+            
+            {/* Story Info */}
+            <div className="text-xs opacity-75 space-y-1">
+              <div>Type: {storyData.type}</div>
+              {storyData.duration && (
+                <div>Duration: {Math.round(storyData.duration)}s</div>
+              )}
+              {storyData.text && (
+                <div>Characters: {storyData.text.length}</div>
+              )}
             </div>
           </div>
         </motion.div>
-      )}
+      </div>
 
       {/* Action Buttons */}
-      <div className="bg-black/80 backdrop-blur-sm p-6">
-        <div className="max-w-md mx-auto">
-          {uploading ? (
-            /* Upload Progress */
-            <div className="text-center">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className="w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-4"
-              />
-              <p className="text-white font-medium mb-2">Publishing your story...</p>
-              <div className="w-full bg-white/20 rounded-full h-2 mb-2">
+      <div className="absolute bottom-8 left-0 right-0 px-6">
+        <div className="flex items-center justify-center space-x-4">
+          {/* Edit Button */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={onBack}
+            className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm border border-white/30 flex items-center justify-center"
+          >
+            <FiEdit3 className="text-white text-xl" />
+          </motion.button>
+
+          {/* Download Button */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm border border-white/30 flex items-center justify-center"
+          >
+            <FiDownload className="text-white text-xl" />
+          </motion.button>
+
+          {/* Publish Button */}
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handlePublish}
+            disabled={isPublishing}
+            className="flex-1 max-w-48 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 text-white py-4 rounded-full font-semibold transition-all flex items-center justify-center space-x-2"
+          >
+            {isPublishing ? (
+              <>
                 <motion.div
-                  className="bg-white rounded-full h-2"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.3 }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
                 />
-              </div>
-              <p className="text-white/60 text-sm">{Math.round(progress)}% complete</p>
-            </div>
-          ) : error ? (
-            /* Error State */
-            <div className="text-center">
-              <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiX className="text-white text-xl" />
-              </div>
-              <p className="text-white font-medium mb-2">Upload failed</p>
-              <p className="text-red-400 text-sm mb-4">{error}</p>
-              <div className="flex space-x-3">
-                <button
-                  onClick={onBack}
-                  className="flex-1 bg-white/20 text-white py-3 rounded-full font-medium transition-colors"
-                >
-                  Edit Story
-                </button>
-                <button
-                  onClick={handlePublish}
-                  className="flex-1 bg-white text-black py-3 rounded-full font-medium transition-colors"
-                >
-                  Try Again
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* Normal Action Buttons */
-            <div className="flex items-center justify-center space-x-4">
-              {/* Edit Button */}
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={onBack}
-                className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm border border-white/30 flex items-center justify-center"
-              >
-                <FiEdit3 className="text-white text-xl" />
-              </motion.button>
-
-              {/* Download Button */}
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm border border-white/30 flex items-center justify-center"
-              >
-                <FiDownload className="text-white text-xl" />
-              </motion.button>
-
-              {/* Publish Button */}
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={handlePublish}
-                className="flex-1 max-w-48 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-4 rounded-full font-semibold transition-all flex items-center justify-center space-x-2"
-              >
+                <span>Publishing...</span>
+              </>
+            ) : (
+              <>
                 <FiSend className="text-xl" />
                 <span>Share to Story</span>
-              </motion.button>
-            </div>
-          )}
+              </>
+            )}
+          </motion.button>
         </div>
       </div>
     </div>
