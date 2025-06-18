@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiX, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
-import { stories } from '../../data/dummyData'
+import { useStories } from '../../hooks/useStories'
+import { formatDistanceToNow } from 'date-fns'
 
 function StoryViewerModal({ isOpen, story, onClose }) {
+  const { stories, viewStory } = useStories()
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0)
   const [progress, setProgress] = useState(0)
 
@@ -11,7 +13,7 @@ function StoryViewerModal({ isOpen, story, onClose }) {
     if (!isOpen || !story) return
 
     const storyIndex = stories.findIndex(s => s.id === story.id)
-    setCurrentStoryIndex(storyIndex)
+    setCurrentStoryIndex(storyIndex >= 0 ? storyIndex : 0)
     setProgress(0)
   }, [isOpen, story])
 
@@ -24,6 +26,10 @@ function StoryViewerModal({ isOpen, story, onClose }) {
           // Auto advance to next story
           if (currentStoryIndex < stories.length - 1) {
             setCurrentStoryIndex(currentStoryIndex + 1)
+            // Mark current story as viewed when auto-advancing
+            if (stories[currentStoryIndex]) {
+              viewStory(stories[currentStoryIndex].id)
+            }
             return 0
           } else {
             onClose()
@@ -36,6 +42,13 @@ function StoryViewerModal({ isOpen, story, onClose }) {
 
     return () => clearInterval(timer)
   }, [isOpen, currentStoryIndex, onClose])
+
+  // Mark story as viewed when opened
+  useEffect(() => {
+    if (isOpen && stories[currentStoryIndex]) {
+      viewStory(stories[currentStoryIndex].id)
+    }
+  }, [isOpen, currentStoryIndex, stories, viewStory])
 
   const currentStory = stories[currentStoryIndex]
 
@@ -55,6 +68,50 @@ function StoryViewerModal({ isOpen, story, onClose }) {
     }
   }
 
+  const getStoryContent = (story) => {
+    if (story.content_type === 'text') {
+      return (
+        <div 
+          className="w-full h-full flex items-center justify-center p-8"
+          style={{ 
+            background: story.background_style?.type === 'gradient' 
+              ? story.background_style.value 
+              : story.background_style?.value || '#000000'
+          }}
+        >
+          <div
+            className="text-center max-w-md"
+            style={{
+              color: story.text_style?.color || '#ffffff',
+              fontSize: `${story.text_style?.size || 24}px`,
+              textAlign: story.text_style?.align || 'center',
+              fontWeight: story.text_style?.bold ? 'bold' : 'normal',
+              fontStyle: story.text_style?.italic ? 'italic' : 'normal',
+              lineHeight: '1.2'
+            }}
+          >
+            {story.text_content}
+          </div>
+        </div>
+      )
+    } else {
+      return (
+        <img
+          src={story.media_url}
+          alt="Story"
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            console.error('Failed to load story media:', story.media_url)
+            e.target.src = story.profiles?.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=400'
+          }}
+        />
+      )
+    }
+  }
+
+  if (!stories || stories.length === 0) {
+    return null
+  }
   return (
     <AnimatePresence>
       {isOpen && currentStory && (
@@ -94,13 +151,17 @@ function StoryViewerModal({ isOpen, story, onClose }) {
             <div className="absolute top-8 left-4 right-4 z-10 flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <img
-                  src={currentStory.user.avatar}
-                  alt={currentStory.user.displayName}
+                  src={currentStory.profiles?.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=40'}
+                  alt={currentStory.profiles?.display_name || 'User'}
                   className="w-8 h-8 rounded-full object-cover border-2 border-white"
                 />
                 <div>
-                  <h3 className="text-white font-semibold text-sm">{currentStory.user.displayName}</h3>
-                  <p className="text-white/70 text-xs">2h ago</p>
+                  <h3 className="text-white font-semibold text-sm">
+                    {currentStory.profiles?.display_name || currentStory.profiles?.username || 'Unknown'}
+                  </h3>
+                  <p className="text-white/70 text-xs">
+                    {formatDistanceToNow(new Date(currentStory.created_at), { addSuffix: true })}
+                  </p>
                 </div>
               </div>
               <button
@@ -113,11 +174,7 @@ function StoryViewerModal({ isOpen, story, onClose }) {
 
             {/* Story Content */}
             <div className="w-full h-full flex items-center justify-center">
-              <img
-                src={currentStory.media.url}
-                alt="Story"
-                className="w-full h-full object-cover"
-              />
+              {getStoryContent(currentStory)}
             </div>
 
             {/* Navigation Areas */}
