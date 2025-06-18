@@ -94,7 +94,21 @@ function StoryViewerModal({ isOpen, story, onClose }) {
           </div>
         </div>
       )
+    } else if (story.file_type && story.file_type.startsWith('video/')) {
+      // Render video
+      return (
+        <video
+          src={story.media_url}
+          controls
+          autoPlay
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            console.error('Failed to load story media:', story.media_url)
+          }}
+        />
+      )
     } else {
+      // Render image
       return (
         <img
           src={story.media_url}
