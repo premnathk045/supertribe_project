@@ -3,9 +3,17 @@ import { supabase } from './supabase'
 // Upload media file to Supabase Storage
 export const uploadStoryMedia = async (file, userId) => {
   try {
-    const fileExt = file.name.split('.').pop()
+    // Use a fallback extension if file.name is missing (e.g., for Blobs)
+    let fileExt = 'bin'
+    if (file.name) {
+      fileExt = file.name.split('.').pop()
+    } else if (file.type && file.type.startsWith('image/')) {
+      fileExt = file.type.split('/').pop()
+    } else if (file.type && file.type.startsWith('video/')) {
+      fileExt = file.type.split('/').pop()
+    }
     const fileName = `${userId}/${Date.now()}.${fileExt}`
-    
+
     const { data, error } = await supabase.storage
       .from('story-media')
       .upload(fileName, file, {

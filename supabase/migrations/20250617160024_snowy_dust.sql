@@ -19,7 +19,7 @@
 DROP TABLE IF EXISTS stories CASCADE;
 CREATE TABLE stories (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  creator_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  creator_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   content_type TEXT NOT NULL CHECK (content_type IN ('photo', 'video', 'text')),
   media_url TEXT,
   media_path TEXT, -- Storage path for cleanup
