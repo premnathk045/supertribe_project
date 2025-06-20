@@ -68,9 +68,14 @@ The project follows a clean and modular structure, primarily organized within th
 ```
 src/
 ├── App.jsx                     # Main application component with routing
+├── App.css                     # App-level styles
 ├── main.jsx                    # Entry point with providers
 ├── index.css                   # Global styles and Tailwind directives
+├── assets/                     # Static assets (e.g., SVGs)
+│   └── react.svg
 ├── components/                 # Reusable UI components
+│   ├── Admin/                  # Admin/debug panels
+│   │   └── StorageDebugPanel.jsx
 │   ├── Auth/                   # Authentication components
 │   │   ├── AuthModal.jsx
 │   │   ├── SignInForm.jsx
@@ -78,52 +83,74 @@ src/
 │   │   ├── ForgotPasswordForm.jsx
 │   │   ├── ResetPasswordForm.jsx
 │   │   └── ProtectedRoute.jsx
-│   ├── Feed/                   # Feed-related components
-│   │   ├── PostCard.jsx
-│   │   └── PostFeed.jsx
+│   ├── CreatorVerification/    # Creator verification onboarding
+│   │   ├── AgeVerification.jsx
+│   │   ├── PaymentSetup.jsx
+│   │   ├── PersonalInfoForm.jsx
+│   │   ├── ProfileSetup.jsx
+│   │   └── VerificationProgressBar.jsx
 │   ├── Discover/               # Discovery section components
 │   │   ├── CategoryGrid.jsx
 │   │   ├── CreatorGrid.jsx
 │   │   ├── SearchBar.jsx
 │   │   └── TrendingSection.jsx
+│   ├── ErrorBoundary.jsx       # Error handling
+│   ├── Feed/                   # Feed-related components
+│   │   ├── PostCard.jsx
+│   │   └── PostFeed.jsx
 │   ├── Layout/                 # Layout components
-│   │   ├── TopNavigation.jsx
 │   │   ├── BottomNavigation.jsx
-│   │   └── Layout.jsx
+│   │   ├── Layout.jsx
+│   │   └── TopNavigation.jsx
 │   ├── Media/                  # Media handling components
 │   │   └── MediaCarousel.jsx
 │   ├── Modals/                 # Modal dialogs
-│   │   ├── SettingsModal.jsx
-│   │   ├── StoryViewerModal.jsx
 │   │   ├── PostDetailModal.jsx
-│   │   └── ShareSheetModal.jsx
+│   │   ├── SettingsModal.jsx
+│   │   ├── ShareSheetModal.jsx
+│   │   └── StoryViewerModal.jsx
 │   ├── Stories/                # Stories feature
 │   │   ├── StoriesCarousel.jsx
 │   │   └── StoryCreationModal/ # Advanced story creation system
 │   │       ├── index.jsx
 │   │       ├── constants.js
-│   │       ├── hooks/
 │   │       ├── components/
+│   │       │   ├── BottomTabNavigation.jsx
+│   │       │   ├── ModalHeader.jsx
+│   │       │   └── PermissionModal.jsx
+│   │       ├── hooks/
+│   │       │   └── useStoryCreation.js
 │   │       └── modes/
+│   │           ├── GalleryMode.jsx
+│   │           ├── PhotoMode.jsx
+│   │           ├── PreviewMode.jsx
+│   │           ├── TextMode.jsx
+│   │           └── VideoMode.jsx
 │   ├── UI/                     # Generic UI elements
 │   │   └── LoadingSpinner.jsx
-│   └── ErrorBoundary.jsx       # Error handling
 ├── contexts/                   # React contexts
 │   └── AuthContext.jsx         # Authentication state management
+├── data/                       # Mock data for development
+│   └── dummyData.js
+├── hooks/                      # Custom hooks
+│   └── useStories.js
 ├── lib/                        # External service configurations
+│   ├── stories.js
+│   ├── storageUtils.js
 │   └── supabase.js             # Supabase client setup
-├── utils/                      # Utility functions
-│   └── validation.js           # Form validation helpers
 ├── pages/                      # Top-level page components
-│   ├── HomePage.jsx
-│   ├── DiscoverPage.jsx
 │   ├── CreatePostPage.jsx
+│   ├── CreatorDashboardPage.jsx
+│   ├── CreatorVerificationPage.jsx
+│   ├── DiscoverPage.jsx
+│   ├── HomePage.jsx
+│   ├── MessagesPage.jsx
 │   ├── NotificationsPage.jsx
 │   ├── ProfilePage.jsx
-│   ├── MessagesPage.jsx
-│   └── ResetPasswordPage.jsx
-└── data/
-    └── dummyData.js           # Mock data for development
+│   ├── ResetPasswordPage.jsx
+│   └── StorageDebugPage.jsx
+├── utils/                      # Utility functions
+│   └── validation.js           # Form validation helpers
 ```
 
 ### 2.3 Dependencies and Integrations
@@ -394,6 +421,20 @@ Multi-step form (3 steps) for post creation:
 - **ShareSheetModal:** Share options bottom-sheet
 - **AuthModal:** Authentication modal with multiple forms
 
+#### 3.3.8 Reset Password Page (`ResetPasswordPage.jsx`)
+- Standalone page for users to set a new password after clicking a reset link
+- Includes form for entering and confirming new password
+- Real-time validation for password strength and match
+- Displays success or error messages
+- Redirects to sign-in page after successful reset
+
+#### 3.3.9 Creator Verification Page (`CreatorVerificationPage.jsx`)
+- Multi-step onboarding for creators to verify their profile and set up payment
+- Steps include profile completion, payment method setup, and demo approval
+- Integrates with Supabase for user profile and payment method management
+- Auto-approval for demo/testing purposes
+- Guides users through becoming a verified creator
+
 ### 3.4 User Flows and Interactions
 
 #### 3.4.1 Authentication Flows
@@ -651,6 +692,7 @@ Multi-step form (3 steps) for post creation:
 - **Error States:** User-friendly error messages and recovery options
 - **Success States:** Confirmation messages and visual feedback
 - **Empty States:** Helpful messaging for empty content areas
+- **ErrorBoundary:** Catches and displays errors in the UI gracefully
 
 ### 5.2 Design System
 
