@@ -83,12 +83,28 @@ src/
 │   │   ├── ForgotPasswordForm.jsx
 │   │   ├── ResetPasswordForm.jsx
 │   │   └── ProtectedRoute.jsx
+│   ├── Comments/               # Comments system
+│   │   ├── CommentForm.jsx
+│   │   ├── CommentItem.jsx
+│   │   └── CommentsList.jsx
+│   ├── CreatePost/             # Advanced post creation
+│   │   ├── ErrorModal.jsx
+│   │   ├── MediaPreviewGrid.jsx
+│   │   ├── PollSection.jsx
+│   │   ├── PriceSelectorModal.jsx
+│   │   ├── ScheduledPostsModal.jsx
+│   │   ├── ScheduleSelectorModal.jsx
+│   │   ├── TagSelectorModal.jsx
+│   │   └── UploadProgressBar.jsx
 │   ├── CreatorVerification/    # Creator verification onboarding
 │   │   ├── AgeVerification.jsx
 │   │   ├── PaymentSetup.jsx
 │   │   ├── PersonalInfoForm.jsx
 │   │   ├── ProfileSetup.jsx
 │   │   └── VerificationProgressBar.jsx
+│   ├── Debug/                  # Debug and environment tools
+│   │   ├── EnvChecker.jsx
+│   │   └── SupabaseDebug.jsx
 │   ├── Discover/               # Discovery section components
 │   │   ├── CategoryGrid.jsx
 │   │   ├── CreatorGrid.jsx
@@ -111,21 +127,28 @@ src/
 │   │   └── StoryViewerModal.jsx
 │   ├── Stories/                # Stories feature
 │   │   ├── StoriesCarousel.jsx
-│   │   └── StoryCreationModal/ # Advanced story creation system
-│   │       ├── index.jsx
-│   │       ├── constants.js
-│   │       ├── components/
-│   │       │   ├── BottomTabNavigation.jsx
-│   │       │   ├── ModalHeader.jsx
-│   │       │   └── PermissionModal.jsx
-│   │       ├── hooks/
-│   │       │   └── useStoryCreation.js
-│   │       └── modes/
-│   │           ├── GalleryMode.jsx
-│   │           ├── PhotoMode.jsx
-│   │           ├── PreviewMode.jsx
-│   │           ├── TextMode.jsx
-│   │           └── VideoMode.jsx
+│   │   ├── components/
+│   │   │   ├── MediaCapture/
+│   │   │   ├── Preview/
+│   │   │   ├── TextStory/
+│   │   │   └── UI/
+│   │   ├── hooks/
+│   │   ├── StoryCreationModal/
+│   │   │   ├── constants.js
+│   │   │   ├── index.jsx
+│   │   │   ├── components/
+│   │   │   │   ├── BottomTabNavigation.jsx
+│   │   │   │   ├── ModalHeader.jsx
+│   │   │   │   └── PermissionModal.jsx
+│   │   │   ├── hooks/
+│   │   │   │   └── useStoryCreation.js
+│   │   │   └── modes/
+│   │   │       ├── GalleryMode.jsx
+│   │   │       ├── PhotoMode.jsx
+│   │   │       ├── PreviewMode.jsx
+│   │   │       ├── TextMode.jsx
+│   │   │       └── VideoMode.jsx
+│   │   └── styles/
 │   ├── UI/                     # Generic UI elements
 │   │   └── LoadingSpinner.jsx
 ├── contexts/                   # React contexts
@@ -133,7 +156,8 @@ src/
 ├── data/                       # Mock data for development
 │   └── dummyData.js
 ├── hooks/                      # Custom hooks
-│   └── useStories.js
+│   ├── useStories.js
+│   └── useComments.js
 ├── lib/                        # External service configurations
 │   ├── stories.js
 │   ├── storageUtils.js
@@ -148,7 +172,7 @@ src/
 │   ├── NotificationsPage.jsx
 │   ├── ProfilePage.jsx
 │   ├── ResetPasswordPage.jsx
-│   └── StorageDebugPage.jsx
+│   └── StorageDebugPage.jsx    # Debug page for storage and backend
 ├── utils/                      # Utility functions
 │   └── validation.js           # Form validation helpers
 ```
@@ -376,24 +400,33 @@ Multi-step form (3 steps) for post creation:
 - Upload multiple images/videos via drag-and-drop or file selection
 - Display preview of selected media
 - Remove individual media items
+- **Advanced:** Media preview grid, upload progress bar, error modal for upload issues
 
 **Step 2 (Add Details):**
 - Rich text editor (`ReactQuill`) for post captions
 - Toggle for "Premium Content" with price input
 - Tag input system (comma-separated)
+- **Advanced:** Tag selector modal, price selector modal, poll section, schedule selector modal for scheduled posts
 
 **Step 3 (Preview):**
 - Complete post preview including content, media, and premium status
 - Final review before publishing
+- **Advanced:** Scheduled posts modal for managing scheduled content
 
-#### 3.3.4 Notifications Page (`NotificationsPage.jsx`)
+#### 3.3.4 Comments System (New)
+- Add, display, and manage comments on posts
+- Components: `CommentsList`, `CommentItem`, `CommentForm`
+- Real-time comment updates and validation
+- Integrated with post detail modal and feed
+
+#### 3.3.5 Notifications Page (`NotificationsPage.jsx`)
 - List of notifications (likes, follows, comments, purchases)
 - Visual indicators for notification types and read status
 - Post thumbnails for post-related notifications
 - Click to mark as read functionality
 - Tabs for "All" and "Mentions" filtering
 
-#### 3.3.5 Profile Page (`ProfilePage.jsx`)
+#### 3.3.6 Profile Page (`ProfilePage.jsx`)
 - User avatar, display name, username, verification/premium badges
 - Statistics display: Posts, Followers, Following
 - Bio section
@@ -402,7 +435,7 @@ Multi-step form (3 steps) for post creation:
 - Tabbed content: Posts, Saved, Liked
 - Post grid with hover effects showing engagement metrics
 
-#### 3.3.6 Messages Page (`MessagesPage.jsx`)
+#### 3.3.7 Messages Page (`MessagesPage.jsx`)
 **Chat List View:**
 - List of conversations with participant info
 - Last message preview and unread count
@@ -414,26 +447,46 @@ Multi-step form (3 steps) for post creation:
 - Send functionality
 - Header with call options and more menu
 
-#### 3.3.7 Modal Components
+#### 3.3.8 Modal Components
 - **SettingsModal:** Bottom-sheet with settings sections and sign-out functionality
 - **StoryViewerModal:** Full-screen story viewer with auto-advance
 - **PostDetailModal:** Detailed post view with comments
 - **ShareSheetModal:** Share options bottom-sheet
 - **AuthModal:** Authentication modal with multiple forms
 
-#### 3.3.8 Reset Password Page (`ResetPasswordPage.jsx`)
+#### 3.3.9 Reset Password Page (`ResetPasswordPage.jsx`)
 - Standalone page for users to set a new password after clicking a reset link
 - Includes form for entering and confirming new password
 - Real-time validation for password strength and match
 - Displays success or error messages
 - Redirects to sign-in page after successful reset
 
-#### 3.3.9 Creator Verification Page (`CreatorVerificationPage.jsx`)
+#### 3.3.10 Creator Verification Page (`CreatorVerificationPage.jsx`)
 - Multi-step onboarding for creators to verify their profile and set up payment
 - Steps include profile completion, payment method setup, and demo approval
 - Integrates with Supabase for user profile and payment method management
 - Auto-approval for demo/testing purposes
 - Guides users through becoming a verified creator
+
+#### 3.3.11 Debug/Admin Tools (New)
+- Supabase Debug Panel (`SupabaseDebug.jsx`): Test Supabase connection, authentication, posts table, and storage access
+- EnvChecker (`EnvChecker.jsx`): Check environment variables for Supabase
+- Storage Debug Panel (`StorageDebugPanel.jsx`): Debug storage and backend
+- Storage Debug Page (`StorageDebugPage.jsx`): Dedicated page for storage and backend debugging
+
+#### 3.3.12 Stories Feature (Expanded)
+- Modular story creation system with modes: Gallery, Photo, Video, Text, Preview
+- Subcomponents: BottomTabNavigation, ModalHeader, PermissionModal
+- Custom hook: `useStoryCreation.js` for managing story creation state
+- Advanced structure for extensibility and maintainability
+
+#### 3.3.13 Custom Hooks (Expanded)
+- `useStories.js`: Manage stories state and logic
+- `useComments.js`: Manage comments state and logic
+
+#### 3.3.14 Utilities and Data (New)
+- `dummyData.js`: Mock data for development and testing
+- `validation.js`: Utility functions for form validation
 
 ### 3.4 User Flows and Interactions
 
