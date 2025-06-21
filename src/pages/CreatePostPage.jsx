@@ -24,6 +24,7 @@ import ScheduledPostsModal from '../components/CreatePost/ScheduledPostsModal'
 import ErrorModal from '../components/CreatePost/ErrorModal'
 import UploadProgressBar from '../components/CreatePost/UploadProgressBar'
 import { format } from 'date-fns'
+import SupabaseDebug from '../components/Debug/SupabaseDebug'
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
@@ -81,45 +82,81 @@ function CreatePostPage() {
 
   // Validation
   const validatePost = () => {
+    console.log('🔍 Validating post...')
     const newErrors = {}
 
     // Content or media required
     if (!postData.content.trim() && postData.media.length === 0) {
+      console.log('❌ Validation failed: No content or media')
       newErrors.general = 'Please add content or media to your post'
     }
 
     // Poll validation
     if (postData.poll.enabled) {
       if (!postData.poll.question.trim()) {
+        console.log('❌ Validation failed: Poll question missing')
         newErrors.poll = { question: 'Poll question is required' }
       }
       
       const validOptions = postData.poll.options.filter(opt => opt.trim())
       if (validOptions.length < 2) {
+        console.log('❌ Validation failed: Not enough poll options')
         newErrors.poll = { ...newErrors.poll, options: 'At least 2 poll options are required' }
       }
       
       if (postData.poll.options.some(opt => opt.trim() === '')) {
+        console.log('❌ Validation failed: Empty poll options')
         newErrors.poll = { ...newErrors.poll, options: 'All poll options must be filled' }
       }
     }
 
     // Premium validation
     if (postData.isPremium && (!postData.price || postData.price < 0.99)) {
+      console.log('❌ Validation failed: Invalid premium price')
       newErrors.price = 'Premium posts must have a price of at least $0.99'
     }
 
     // Schedule validation
     if (postData.scheduledFor && new Date(postData.scheduledFor) <= new Date()) {
+      console.log('❌ Validation failed: Invalid schedule time')
       newErrors.schedule = 'Scheduled time must be in the future'
     }
 
+    console.log('✅ Validation result:', { errors: newErrors, isValid: Object.keys(newErrors).length === 0 })
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   // Check if post can be submitted
   const canSubmit = () => {
+    const hasContent = postData.content.trim() || postData.media.length > 0
+    const notSubmitting = !isSubmitting
+    const uploadsComplete = Object.keys(uploadProgress).every(key => uploadProgress[key] === 100)
+    
+    console.log('🔍 canSubmit check:', {
+      hasContent,
+      notSubmitting,
+      uploadsComplete,
+      uploadProgress,
+      postDataContent: postData.content,
+      mediaLength: postData.media.length
+    })
+    
+    return hasContent && 
+           notSubmitting && 
+           uploadsComplete
+  }
+
+  // Debug canSubmit on every render
+  console.log('🔄 Render - canSubmit:', canSubmit(), {
+    content: postData.content,
+    mediaCount: postData.media.length,
+    isSubmitting,
+    uploadProgress
+  })
+
+  // Check if post can be submitted (original function)
+  const canSubmitOriginal = () => {
     return (postData.content.trim() || postData.media.length > 0) && 
            !isSubmitting && 
            Object.keys(uploadProgress).every(key => uploadProgress[key] === 100)
@@ -210,8 +247,11 @@ function CreatePostPage() {
   // Upload media to Supabase Storage
   const uploadMediaToStorage = async (mediaItem) => {
     try {
+      console.log('📤 Starting media upload:', mediaItem)
       const fileExt = mediaItem.name.split('.').pop()
       const fileName = `${user.id}/${Date.now()}.${fileExt}`
+
+      console.log('📁 Upload path:', fileName)
 
       const { data, error } = await supabase.storage
         .from('post-media')
@@ -220,41 +260,62 @@ function CreatePostPage() {
           upsert: false
         })
 
+      console.log('📤 Storage upload response:', { data, error })
+
       if (error) throw error
 
       const { data: { publicUrl } } = supabase.storage
         .from('post-media')
         .getPublicUrl(fileName)
 
+      console.log('🔗 Public URL generated:', publicUrl)
+
       return publicUrl
     } catch (error) {
       console.error('Error uploading media:', error)
+      console.error('❌ Media upload error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      })
       throw error
     }
   }
 
   // Handle post submission
   const handleSubmit = async () => {
+    console.log('🚀 handleSubmit called')
+    console.log('📊 Current postData:', postData)
+    console.log('👤 Current user:', user)
+    console.log('✅ canSubmit result:', canSubmit())
+    
     if (!validatePost()) return
 
     setIsSubmitting(true)
     setErrors({})
+    
+    console.log('🔄 Starting submission process...')
 
     try {
       // Upload media files
       const mediaUrls = []
       for (const mediaItem of postData.media) {
+        console.log('📤 Uploading media:', mediaItem.name)
         const url = await uploadMediaToStorage(mediaItem)
+        console.log('✅ Media uploaded:', url)
         mediaUrls.push(url)
       }
 
       // Upload preview video if exists
       let previewVideoUrl = null
       if (postData.previewVideo?.file) {
+        console.log('📹 Uploading preview video...')
         previewVideoUrl = await uploadMediaToStorage({
           file: postData.previewVideo.file,
           name: `preview_${postData.previewVideo.file.name}`
         })
+        console.log('✅ Preview video uploaded:', previewVideoUrl)
       }
 
       // Create post record
@@ -278,13 +339,21 @@ function CreatePostPage() {
         status: postData.scheduledFor ? 'scheduled' : 'published'
       }
 
+      console.log('📝 Post record to be created:', postRecord)
+      console.log('🔗 Supabase client:', supabase)
+
       const { data, error } = await supabase
         .from('posts')
         .insert([postRecord])
         .select()
         .single()
 
+      console.log('📤 Supabase response - data:', data)
+      console.log('❌ Supabase response - error:', error)
+
       if (error) throw error
+
+      console.log('✅ Post created successfully:', data)
 
       // Reset form
       setPostData({
@@ -309,6 +378,12 @@ function CreatePostPage() {
 
     } catch (error) {
       console.error('Error creating post:', error)
+      console.error('❌ Full error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      })
       setErrorDetails({
         type: 'network',
         message: 'Failed to create post',
@@ -353,6 +428,7 @@ function CreatePostPage() {
             whileTap={{ scale: 0.95 }}
             onClick={handleSubmit}
             disabled={!canSubmit()}
+            onMouseEnter={() => console.log('🖱️ Post button hovered, canSubmit:', canSubmit())}
             className="bg-primary-500 hover:bg-primary-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
           >
             {isSubmitting ? (
@@ -372,6 +448,15 @@ function CreatePostPage() {
       </div>
 
       <div className="max-w-lg mx-auto p-4 space-y-6">
+        {/* Debug Panel - Remove this in production */}
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <h3 className="font-semibold text-yellow-800 mb-2">Debug Panel</h3>
+          <p className="text-sm text-yellow-700 mb-3">
+            This panel helps debug post creation issues. Remove in production.
+          </p>
+          <SupabaseDebug />
+        </div>
+
         {/* General Error */}
         {errors.general && (
           <motion.div

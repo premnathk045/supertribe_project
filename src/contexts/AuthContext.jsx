@@ -49,11 +49,14 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('🔐 Initial session check:', session)
       setSession(session)
       setUser(session?.user ?? null)
       
       if (session?.user) {
+        console.log('👤 User found, fetching profile...')
         const profile = await fetchUserProfile(session.user.id)
+        console.log('📋 User profile:', profile)
         setUserProfile(profile)
       }
       
@@ -64,6 +67,7 @@ export const AuthProvider = ({ children }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state change:', event, session)
       setSession(session)
       setUser(session?.user ?? null)
       
