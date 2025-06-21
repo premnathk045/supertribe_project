@@ -37,7 +37,7 @@ function PostFeed({ onPostClick, onShareClick }) {
         .from('posts')
         .select(`
           *,
-          profiles!user_id (
+          profiles (
             username,
             display_name,
             avatar_url,
