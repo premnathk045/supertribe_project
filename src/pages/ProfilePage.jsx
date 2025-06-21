@@ -24,6 +24,8 @@ function ProfilePage() {
   const { user, userProfile, updateUserProfile } = useAuth()
   const [profileData, setProfileData] = useState(null)
   const [userPosts, setUserPosts] = useState([])
+  const [savedPosts, setSavedPosts] = useState([])
+  const [likedPosts, setLikedPosts] = useState([])
   const [profileStats, setProfileStats] = useState({
     postCount: 0,
     followerCount: 0,
@@ -52,6 +54,44 @@ function ProfilePage() {
       fetchProfileData()
     }
   }, [username])
+
+  useEffect(() => {
+    if (!profileData) return;
+    // Fetch posts for the user
+    const fetchUserPosts = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        // User's own posts
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('user_id', profileData.id)
+          .order('created_at', { ascending: false })
+        if (postsError) throw postsError
+        setUserPosts(postsData || [])
+        // Saved posts
+        const { data: savesData, error: savesError } = await supabase
+          .from('post_saves')
+          .select('post_id, posts:post_id(*)')
+          .eq('user_id', profileData.id)
+        if (savesError) throw savesError
+        setSavedPosts((savesData || []).map(s => s.posts).filter(Boolean))
+        // Liked posts
+        const { data: likesData, error: likesError } = await supabase
+          .from('post_likes')
+          .select('post_id, posts:post_id(*)')
+          .eq('user_id', profileData.id)
+        if (likesError) throw likesError
+        setLikedPosts((likesData || []).map(l => l.posts).filter(Boolean))
+      } catch (err) {
+        setError(err.message || 'Failed to load posts')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchUserPosts()
+  }, [profileData])
 
   const fetchProfileData = async () => {
     try {
@@ -83,37 +123,6 @@ function ProfilePage() {
         display_name: profile.display_name || '',
         bio: profile.bio || '',
         avatar_url: profile.avatar_url || ''
-      })
-
-      // Fetch user's posts - Fixed query to properly join through auth.users
-      const { data: posts, error: postsError } = await supabase
-        .from('posts')
-        .select(`
-          *,
-          profiles!inner(
-            username,
-            display_name,
-            avatar_url,
-            is_verified,
-            user_type
-          )
-        `)
-        .eq('user_id', profile.id)
-        .order('created_at', { ascending: false })
-
-      if (postsError) {
-        console.error('Error fetching posts:', postsError)
-        // Don't set error here, just log it and continue with empty posts
-        setUserPosts([])
-      } else {
-        setUserPosts(posts || [])
-      }
-
-      // Calculate stats
-      setProfileStats({
-        postCount: posts?.length || 0,
-        followerCount: 0, // TODO: Implement followers table
-        followingCount: 0  // TODO: Implement following table
       })
 
     } catch (error) {
@@ -553,6 +562,110 @@ function ProfilePage() {
             {activeTab === 'posts' && userPosts.length > 0 ? (
               <div className="grid grid-cols-3 gap-1">
                 {userPosts.map((post, index) => (
+                  <motion.div
+                    key={post.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative group cursor-pointer"
+                  >
+                    {post.media_urls && post.media_urls.length > 0 ? (
+                      <img
+                        src={post.media_urls[0]}
+                        alt="Post"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-gray-400 text-sm">No Image</span>
+                      </div>
+                    )}
+                    
+                    {/* Overlay on hover */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="flex items-center space-x-4 text-white">
+                        <div className="flex items-center space-x-1">
+                          <FiHeart className="fill-current" />
+                          <span className="font-medium">{post.like_count || 0}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <FiMessageCircle />
+                          <span className="font-medium">{post.comment_count || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Premium indicator */}
+                    {post.is_premium && (
+                      <div className="absolute top-2 right-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full">
+                        Premium
+                      </div>
+                    )}
+
+                    {/* Multiple media indicator */}
+                    {post.media_urls && post.media_urls.length > 1 && (
+                      <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+                        1/{post.media_urls.length}
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            ) : activeTab === 'saved' && savedPosts.length > 0 ? (
+              <div className="grid grid-cols-3 gap-1">
+                {savedPosts.map((post, index) => (
+                  <motion.div
+                    key={post.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative group cursor-pointer"
+                  >
+                    {post.media_urls && post.media_urls.length > 0 ? (
+                      <img
+                        src={post.media_urls[0]}
+                        alt="Post"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-gray-400 text-sm">No Image</span>
+                      </div>
+                    )}
+                    
+                    {/* Overlay on hover */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="flex items-center space-x-4 text-white">
+                        <div className="flex items-center space-x-1">
+                          <FiHeart className="fill-current" />
+                          <span className="font-medium">{post.like_count || 0}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <FiMessageCircle />
+                          <span className="font-medium">{post.comment_count || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Premium indicator */}
+                    {post.is_premium && (
+                      <div className="absolute top-2 right-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full">
+                        Premium
+                      </div>
+                    )}
+
+                    {/* Multiple media indicator */}
+                    {post.media_urls && post.media_urls.length > 1 && (
+                      <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+                        1/{post.media_urls.length}
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            ) : activeTab === 'liked' && likedPosts.length > 0 ? (
+              <div className="grid grid-cols-3 gap-1">
+                {likedPosts.map((post, index) => (
                   <motion.div
                     key={post.id}
                     initial={{ opacity: 0, scale: 0.9 }}

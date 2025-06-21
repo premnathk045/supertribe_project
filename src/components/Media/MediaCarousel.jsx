@@ -19,6 +19,10 @@ function MediaCarousel({ media, currentIndex, onIndexChange, onClick }) {
 
   const currentMedia = media[currentIndex]
 
+  if (!media || media.length === 0 || !currentMedia) {
+    return null // or you can return a fallback UI here
+  }
+
   return (
     <div className="relative aspect-square bg-gray-100 overflow-hidden group">
       <AnimatePresence mode="wait">

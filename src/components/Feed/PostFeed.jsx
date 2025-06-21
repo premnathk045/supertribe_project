@@ -33,11 +33,12 @@ function PostFeed({ onPostClick, onShareClick }) {
 
       console.log('🔍 Fetching posts from Supabase...', { pageNum, append })
 
-      const { data, error } = await supabase
+      // Fetch posts
+      const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select(`
           *,
-          profiles (
+          profiles:user_id (
             username,
             display_name,
             avatar_url,
@@ -49,15 +50,34 @@ function PostFeed({ onPostClick, onShareClick }) {
         .order('created_at', { ascending: false })
         .range(pageNum * POSTS_PER_PAGE, (pageNum + 1) * POSTS_PER_PAGE - 1)
 
-      if (error) {
-        console.error('❌ Error fetching posts:', error)
-        throw error
+      if (postsError) {
+        console.error('❌ Error fetching posts:', postsError)
+        throw postsError
       }
 
-      console.log('✅ Posts fetched successfully:', data)
+      // Get post IDs for like/save status
+      const postIds = postsData.map(post => post.id)
+      let likedIds = []
+      let savedIds = []
+      if (user && postIds.length > 0) {
+        // Fetch likes
+        const { data: likesData } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .in('post_id', postIds)
+          .eq('user_id', user.id)
+        likedIds = likesData ? likesData.map(l => l.post_id) : []
+        // Fetch saves
+        const { data: savesData } = await supabase
+          .from('post_saves')
+          .select('post_id')
+          .in('post_id', postIds)
+          .eq('user_id', user.id)
+        savedIds = savesData ? savesData.map(s => s.post_id) : []
+      }
 
       // Transform data to match expected format
-      const transformedPosts = data.map(post => ({
+      const transformedPosts = postsData.map(post => ({
         ...post,
         user: {
           id: post.user_id,
@@ -68,15 +88,15 @@ function PostFeed({ onPostClick, onShareClick }) {
           isPremium: post.profiles?.user_type === 'creator' && post.profiles?.is_verified
         },
         media: post.media_urls ? post.media_urls.map(url => ({
-          type: 'image', // We'll assume images for now, could be enhanced to detect type
+          type: 'image',
           url: url,
           thumbnail: url
         })) : [],
         likeCount: post.like_count || 0,
         commentCount: post.comment_count || 0,
         shareCount: post.share_count || 0,
-        isLiked: false, // TODO: Check if current user liked this post
-        isSaved: false, // TODO: Check if current user saved this post
+        isLiked: likedIds.includes(post.id),
+        isSaved: savedIds.includes(post.id),
         createdAt: new Date(post.created_at),
         tags: post.tags || []
       }))
@@ -87,7 +107,6 @@ function PostFeed({ onPostClick, onShareClick }) {
         setPosts(transformedPosts)
       }
 
-      // Check if we have more posts
       setHasMore(transformedPosts.length === POSTS_PER_PAGE)
       
     } catch (error) {
@@ -102,6 +121,7 @@ function PostFeed({ onPostClick, onShareClick }) {
   // Initial load
   useEffect(() => {
     fetchPosts(0, false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Infinite scroll
@@ -111,30 +131,67 @@ function PostFeed({ onPostClick, onShareClick }) {
       setPage(nextPage)
       fetchPosts(nextPage, true)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inView, hasMore, loading, loadingMore, page])
 
   const handlePostInteraction = async (postId, action) => {
-    console.log('🔄 Post interaction:', { postId, action })
-    
+    if (!user) return;
     setPosts(prev => prev.map(post => {
       if (post.id === postId) {
         switch (action) {
-          case 'like':
-            // TODO: Implement actual like/unlike in Supabase
+          case 'like': {
+            const optimistic = !post.isLiked;
             return {
               ...post,
-              isLiked: !post.isLiked,
-              likeCount: post.isLiked ? post.likeCount - 1 : post.likeCount + 1
+              isLiked: optimistic,
+              likeCount: optimistic ? post.likeCount + 1 : post.likeCount - 1
             }
-          case 'save':
-            // TODO: Implement actual save/unsave in Supabase
+          }
+          case 'save': {
             return { ...post, isSaved: !post.isSaved }
+          }
           default:
             return post
         }
       }
       return post
     }))
+
+    // Supabase update
+    if (action === 'like') {
+      const liked = posts.find(p => p.id === postId)?.isLiked;
+      if (!liked) {
+        // Like (insert)
+        const { error } = await supabase.from('post_likes').insert({ post_id: postId, user_id: user.id })
+        if (error) {
+          // Revert UI
+          setPosts(prev => prev.map(post => post.id === postId ? { ...post, isLiked: false, likeCount: post.likeCount - 1 } : post))
+        }
+      } else {
+        // Unlike (delete)
+        const { error } = await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id)
+        if (error) {
+          // Revert UI
+          setPosts(prev => prev.map(post => post.id === postId ? { ...post, isLiked: true, likeCount: post.likeCount + 1 } : post))
+        }
+      }
+    }
+    if (action === 'save') {
+      const saved = posts.find(p => p.id === postId)?.isSaved;
+      if (!saved) {
+        // Save (insert)
+        const { error } = await supabase.from('post_saves').insert({ post_id: postId, user_id: user.id })
+        if (error) {
+          setPosts(prev => prev.map(post => post.id === postId ? { ...post, isSaved: false } : post))
+        }
+      } else {
+        // Unsave (delete)
+        const { error } = await supabase.from('post_saves').delete().eq('post_id', postId).eq('user_id', user.id)
+        if (error) {
+          setPosts(prev => prev.map(post => post.id === postId ? { ...post, isSaved: true } : post))
+        }
+      }
+    }
   }
 
   // Skeleton loader component
@@ -230,7 +287,7 @@ function PostFeed({ onPostClick, onShareClick }) {
       {/* Infinite scroll trigger */}
       <div ref={ref} className="flex justify-center py-8">
         {!hasMore && posts.length > 0 && (
-          <p className="text-gray-500 text-center">You've reached the end!</p>
+          <p className="text-gray-500 text-center">You&apos;ve reached the end!</p>
         )}
       </div>
 

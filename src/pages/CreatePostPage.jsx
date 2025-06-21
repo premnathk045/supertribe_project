@@ -6,7 +6,6 @@ import {
   FiImage, 
   FiVideo, 
   FiHash,
-  FiBarChart3,
   FiDollarSign,
   FiCalendar,
   FiClock,
