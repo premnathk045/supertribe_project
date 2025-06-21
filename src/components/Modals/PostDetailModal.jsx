@@ -157,11 +157,13 @@ function PostDetailModal({ isOpen, post, onClose, onShare }) {
 
             {/* Comment Input */}
             <div className="p-4 border-t border-gray-200">
-          <CommentForm
-            onSubmit={handleAddComment}
-            submitting={submitting}
-            placeholder="Add a comment..."
-          />
+              <CommentForm
+                onSubmit={handleAddComment}
+                submitting={submitting}
+                placeholder="Add a comment..."
+              />
+            </div>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
