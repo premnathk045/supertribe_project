@@ -1,22 +1,38 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiX, FiHeart, FiMessageCircle, FiShare, FiBookmark, FiSend } from 'react-icons/fi'
+import { FiX, FiHeart, FiMessageCircle, FiShare, FiBookmark } from 'react-icons/fi'
 import { formatDistanceToNow } from 'date-fns'
 import MediaCarousel from '../Media/MediaCarousel'
+import CommentsList from '../Comments/CommentsList'
+import CommentForm from '../Comments/CommentForm'
+import { useComments } from '../../hooks/useComments'
 
 function PostDetailModal({ isOpen, post, onClose, onShare }) {
-  const [comment, setComment] = useState('')
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
+  
+  // Use the comments hook for real-time functionality
+  const {
+    comments,
+    loading: commentsLoading,
+    error: commentsError,
+    submitting,
+    addComment,
+    deleteComment
+  } = useComments(post?.id)
 
   if (!post) return null
 
-  const handleSubmitComment = (e) => {
-    e.preventDefault()
-    if (comment.trim()) {
-      // Handle comment submission
-      console.log('Comment submitted:', comment)
-      setComment('')
-    }
+  const handleAddComment = async (content) => {
+    await addComment(content)
+  }
+
+  const handleDeleteComment = async (commentId) => {
+    await deleteComment(commentId)
+  }
+
+  const handleReplyToComment = (comment) => {
+    // TODO: Implement reply functionality
+    console.log('Reply to comment:', comment)
   }
 
   return (
@@ -121,60 +137,31 @@ function PostDetailModal({ isOpen, post, onClose, onShare }) {
 
                 {/* Comments Section */}
                 <div className="space-y-4 mt-4">
-                  <h4 className="font-semibold text-gray-900">Comments</h4>
-                  
-                  {/* Sample Comments */}
-                  <div className="space-y-3">
-                    <div className="flex space-x-3">
-                      <img
-                        src="https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg?auto=compress&cs=tinysrgb&w=50"
-                        alt="Commenter"
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                      <div className="flex-1">
-                        <div className="bg-gray-100 rounded-lg p-3">
-                          <p className="font-medium text-sm">Sarah Wilson</p>
-                          <p className="text-gray-700">Amazing work! Love the colors.</p>
-                        </div>
-                        <div className="flex items-center space-x-4 mt-1">
-                          <span className="text-xs text-gray-500">2h ago</span>
-                          <button className="text-xs text-gray-500 hover:text-primary-500">Like</button>
-                          <button className="text-xs text-gray-500 hover:text-primary-500">Reply</button>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-gray-900">
+                      Comments {comments.length > 0 && `(${comments.length})`}
+                    </h4>
                   </div>
+                  
+                  {/* Comments List */}
+                  <CommentsList
+                    comments={comments}
+                    loading={commentsLoading}
+                    error={commentsError}
+                    onDeleteComment={handleDeleteComment}
+                    onReplyToComment={handleReplyToComment}
+                  />
                 </div>
               </div>
             </div>
 
             {/* Comment Input */}
             <div className="p-4 border-t border-gray-200">
-              <form onSubmit={handleSubmitComment} className="flex items-center space-x-3">
-                <img
-                  src="https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=50"
-                  alt="Your avatar"
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-                <div className="flex-1 relative">
-                  <input
-                    type="text"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="Add a comment..."
-                    className="w-full pl-4 pr-12 py-2 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!comment.trim()}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-primary-500 disabled:text-gray-400 transition-colors"
-                  >
-                    <FiSend className="text-lg" />
-                  </button>
-                </div>
-              </form>
-            </div>
-          </motion.div>
+          <CommentForm
+            onSubmit={handleAddComment}
+            submitting={submitting}
+            placeholder="Add a comment..."
+          />
         </motion.div>
       )}
     </AnimatePresence>
