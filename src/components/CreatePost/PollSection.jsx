@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiPlus, FiX, FiBarChart, FiClock } from 'react-icons/fi'
+import { FiPlus, FiX, FiClock } from 'react-icons/fi'
 
 const POLL_DURATIONS = [
   { label: '1 Day', value: 1 },
@@ -67,7 +67,7 @@ function PollSection({ poll, onPollChange, errors = {} }) {
       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-            <FiBarChart className="text-blue-600 text-lg" />
+            {/* <FiBarChart className="text-blue-600 text-lg" /> */}
           </div>
           <div>
             <h3 className="font-semibold text-gray-900">Add Poll</h3>
