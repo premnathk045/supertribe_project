@@ -122,7 +122,12 @@ function ProfilePage() {
         username: profile.username || '',
         display_name: profile.display_name || '',
         bio: profile.bio || '',
-        avatar_url: profile.avatar_url || ''
+        avatar_url: profile.avatar_url || '',
+        website: profile.website || '',
+        email: profile.email || '',
+        phone: profile.phone || '',
+        gender: profile.gender || '',
+        is_private: profile.is_private || false
       })
 
     } catch (error) {
@@ -254,7 +259,12 @@ function ProfilePage() {
       username: profileData.username || '',
       display_name: profileData.display_name || '',
       bio: profileData.bio || '',
-      avatar_url: profileData.avatar_url || ''
+      avatar_url: profileData.avatar_url || '',
+      website: profileData.website || '',
+      email: profileData.email || '',
+      phone: profileData.phone || '',
+      gender: profileData.gender || '',
+      is_private: profileData.is_private || false
     })
   }
 
@@ -324,18 +334,23 @@ function ProfilePage() {
             <div className="flex items-center space-x-6 mb-6">
               <div className="relative">
                 {isEditing ? (
-                  <div className="relative">
+                  <div className="relative group">
                     <img
                       src={editForm.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150'}
                       alt={editForm.display_name}
-                      className="w-20 h-20 rounded-full object-cover"
+                      className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
                       onError={(e) => {
                         e.target.src = 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150'
                       }}
                     />
-                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                      <FiCamera className="text-white text-xl" />
+                    <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer">
+                      <div className="bg-white/90 rounded-full p-2">
+                        <FiCamera className="text-gray-700 text-lg" />
+                      </div>
                     </div>
+                    <button className="absolute -bottom-1 -right-1 bg-primary-500 hover:bg-primary-600 text-white rounded-full p-2 shadow-lg transition-colors duration-200">
+                      <FiEdit3 className="text-sm" />
+                    </button>
                   </div>
                 ) : (
                   <img
@@ -356,35 +371,8 @@ function ProfilePage() {
               
               <div className="flex-1">
                 {isEditing ? (
-                  <div className="space-y-3">
-                    <div>
-                      <input
-                        type="text"
-                        value={editForm.display_name}
-                        onChange={(e) => handleEditInputChange('display_name', e.target.value)}
-                        className={`text-xl font-bold bg-transparent border-b-2 focus:outline-none transition-colors ${
-                          editErrors.display_name ? 'border-red-500' : 'border-gray-300 focus:border-primary-500'
-                        }`}
-                        placeholder="Display Name"
-                      />
-                      {editErrors.display_name && (
-                        <p className="text-red-500 text-xs mt-1">{editErrors.display_name}</p>
-                      )}
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        value={editForm.username}
-                        onChange={(e) => handleEditInputChange('username', e.target.value.toLowerCase())}
-                        className={`text-gray-600 bg-transparent border-b focus:outline-none transition-colors ${
-                          editErrors.username ? 'border-red-500' : 'border-gray-300 focus:border-primary-500'
-                        }`}
-                        placeholder="@username"
-                      />
-                      {editErrors.username && (
-                        <p className="text-red-500 text-xs mt-1">{editErrors.username}</p>
-                      )}
-                    </div>
+                  <div className="text-sm text-gray-600">
+                    <p>Edit your profile information below</p>
                   </div>
                 ) : (
                   <div>
@@ -419,44 +407,192 @@ function ProfilePage() {
 
             {/* Bio */}
             {isEditing ? (
-              <div className="mb-6">
-                <textarea
-                  value={editForm.bio}
-                  onChange={(e) => handleEditInputChange('bio', e.target.value)}
-                  rows={3}
-                  className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none ${
-                    editErrors.bio ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
-                  placeholder="Tell people about yourself..."
-                />
-                <div className="flex justify-between items-center mt-1">
-                  {editErrors.bio ? (
-                    <p className="text-red-500 text-xs">{editErrors.bio}</p>
-                  ) : (
-                    <div></div>
-                  )}
-                  <p className={`text-xs ${editForm.bio.length > 500 ? 'text-red-500' : 'text-gray-500'}`}>
-                    {editForm.bio.length}/500
-                  </p>
+              <div className="space-y-6 mb-8">
+                {/* Profile Information Section */}
+                <div className="bg-gray-50 rounded-xl p-6 space-y-5">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Information</h3>
+                  
+                  {/* Username Field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Username
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">@</span>
+                      <input
+                        type="text"
+                        value={editForm.username}
+                        onChange={(e) => handleEditInputChange('username', e.target.value.toLowerCase())}
+                        className={`w-full pl-8 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all ${
+                          editErrors.username ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                        }`}
+                        placeholder="username"
+                      />
+                    </div>
+                    {editErrors.username && (
+                      <p className="text-red-500 text-xs mt-1">{editErrors.username}</p>
+                    )}
+                  </div>
+
+                  {/* Display Name Field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Name
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.display_name}
+                      onChange={(e) => handleEditInputChange('display_name', e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all ${
+                        editErrors.display_name ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                      placeholder="Your display name"
+                    />
+                    {editErrors.display_name && (
+                      <p className="text-red-500 text-xs mt-1">{editErrors.display_name}</p>
+                    )}
+                  </div>
+
+                  {/* Bio Field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Bio
+                    </label>
+                    <textarea
+                      value={editForm.bio}
+                      onChange={(e) => handleEditInputChange('bio', e.target.value)}
+                      rows={4}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none ${
+                        editErrors.bio ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                      placeholder="Tell people about yourself..."
+                    />
+                    <div className="flex justify-between items-center mt-2">
+                      {editErrors.bio ? (
+                        <p className="text-red-500 text-xs">{editErrors.bio}</p>
+                      ) : (
+                        <div></div>
+                      )}
+                      <p className={`text-xs ${editForm.bio.length > 500 ? 'text-red-500' : 'text-gray-500'}`}>
+                        {editForm.bio.length}/500
+                      </p>
+                    </div>
+                  </div>
                 </div>
                 
-                {/* Avatar URL Input */}
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Avatar URL
-                  </label>
-                  <input
-                    type="url"
-                    value={editForm.avatar_url}
-                    onChange={(e) => handleEditInputChange('avatar_url', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all ${
-                      editErrors.avatar_url ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                    }`}
-                    placeholder="https://example.com/avatar.jpg"
-                  />
-                  {editErrors.avatar_url && (
-                    <p className="text-red-500 text-xs mt-1">{editErrors.avatar_url}</p>
-                  )}
+                {/* Contact Information Section */}
+                <div className="bg-gray-50 rounded-xl p-6 space-y-5">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+                  
+                  {/* Website Field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Website
+                    </label>
+                    <input
+                      type="url"
+                      value={editForm.website || ''}
+                      onChange={(e) => handleEditInputChange('website', e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 hover:border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                      placeholder="https://yourwebsite.com"
+                    />
+                  </div>
+
+                  {/* Email Field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={editForm.email || ''}
+                      onChange={(e) => handleEditInputChange('email', e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 hover:border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                      placeholder="your@email.com"
+                    />
+                  </div>
+
+                  {/* Phone Field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={editForm.phone || ''}
+                      onChange={(e) => handleEditInputChange('phone', e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 hover:border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                      placeholder="+1 (555) 123-4567"
+                    />
+                  </div>
+
+                  {/* Avatar URL Field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Profile Photo URL
+                    </label>
+                    <input
+                      type="url"
+                      value={editForm.avatar_url}
+                      onChange={(e) => handleEditInputChange('avatar_url', e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all ${
+                        editErrors.avatar_url ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                      placeholder="https://example.com/avatar.jpg"
+                    />
+                    {editErrors.avatar_url && (
+                      <p className="text-red-500 text-xs mt-1">{editErrors.avatar_url}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Personal Information Section */}
+                <div className="bg-gray-50 rounded-xl p-6 space-y-5">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+                  
+                  {/* Gender Field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Gender
+                    </label>
+                    <select
+                      value={editForm.gender || ''}
+                      onChange={(e) => handleEditInputChange('gender', e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 hover:border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-white"
+                    >
+                      <option value="">Prefer not to say</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="non-binary">Non-binary</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Privacy Settings Section */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Privacy Settings</h3>
+                  
+                  {/* Private Account Toggle */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-gray-900">Private Account</h4>
+                      <p className="text-sm text-gray-600">When your account is private, only people you approve can see your posts</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleEditInputChange('is_private', !editForm.is_private)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                        editForm.is_private ? 'bg-primary-500' : 'bg-gray-200'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          editForm.is_private ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -475,7 +611,7 @@ function ProfilePage() {
                     <button
                       onClick={handleSaveProfile}
                       disabled={saving}
-                      className="flex-1 bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+                      className="flex-1 bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl disabled:shadow-md"
                     >
                       {saving ? (
                         <motion.div
@@ -486,14 +622,14 @@ function ProfilePage() {
                       ) : (
                         <>
                           <FiSave className="text-lg" />
-                          <span>Save</span>
+                          <span>Save Changes</span>
                         </>
                       )}
                     </button>
                     <button
                       onClick={handleCancelEdit}
                       disabled={saving}
-                      className="bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 text-gray-900 py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+                      className="bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 text-gray-900 py-3 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 border border-gray-300"
                     >
                       <FiX className="text-lg" />
                       <span>Cancel</span>
@@ -502,7 +638,7 @@ function ProfilePage() {
                 ) : (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 py-3 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 border border-gray-300"
                   >
                     <FiEdit3 className="text-lg" />
                     <span>Edit Profile</span>
