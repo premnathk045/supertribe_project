@@ -7,7 +7,7 @@ import LoadingSpinner from '../UI/LoadingSpinner'
 
 function StoriesCarousel({ onStoryClick, onCreateStory }) {
   const scrollRef = useRef(null)
-  const { stories, loading, error } = useStories()
+  const { storiesForCarousel, loading, error, getUserStories } = useStories()
   const { user, isCreator } = useAuth()
 
   const scroll = (direction) => {
@@ -62,15 +62,17 @@ function StoriesCarousel({ onStoryClick, onCreateStory }) {
           )}
 
           {/* Stories */}
-          {stories.map((story) => {
+          {storiesForCarousel.map((story) => {
             const profile = story.profiles
             const isViewed = story.isViewed || false
+            const userId = profile?.id || story.creator_id
+            const userStories = getUserStories(userId)
 
             return (
               <motion.div
-                key={story.id}
+                key={userId}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => onStoryClick(story)}
+                onClick={() => onStoryClick({ userId, stories: userStories })}
                 className="flex flex-col items-center space-y-2 flex-shrink-0 cursor-pointer"
               >
                 <div className={`story-ring ${isViewed ? 'opacity-50' : ''}`}>
@@ -106,7 +108,7 @@ function StoriesCarousel({ onStoryClick, onCreateStory }) {
           })}
 
           {/* Empty state */}
-          {stories.length === 0 && (
+          {storiesForCarousel.length === 0 && (
             <div className="flex-1 text-center py-8">
               <p className="text-gray-500 text-sm">No stories available</p>
             </div>

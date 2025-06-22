@@ -36,9 +36,9 @@ function PostCard({ post, onLike, onSave, onComment, onShare, onClick }) {
                   <span className="text-white text-xs">✓</span>
                 </div>
               )}
-              {post.user.isPremium && (
+              {/* {post.user.isPremium && (
                 <div className="w-4 h-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
-              )}
+              )} */}
             </div>
             <p className="text-sm text-gray-500">
               {formatDistanceToNow(post.createdAt, { addSuffix: true })}

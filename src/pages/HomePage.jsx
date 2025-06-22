@@ -16,7 +16,7 @@ function HomePage() {
       className="min-h-screen"
     >
       {/* Stories Section */}
-      <div className="bg-white border-b border-gray-200 sticky top-16 z-30">
+      <div className="bg-white border-b border-gray-200">
         <StoriesCarousel 
           onStoryClick={openStoryViewer}
           onCreateStory={isCreator() ? openStoryCreation : undefined}

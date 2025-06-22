@@ -36,8 +36,9 @@ function Layout() {
       
       <main className={`${!hideNavigation ? 'pt-16 pb-20' : ''} transition-all duration-300`}>
         <Outlet context={{
-          openStoryViewer: (story) => {
-            setSelectedStory(story)
+          openStoryViewer: (storyGroup) => {
+            // storyGroup: { userId, stories }
+            setSelectedStory(storyGroup)
             setStoryViewerOpen(true)
           },
           openPostDetail: (post) => {

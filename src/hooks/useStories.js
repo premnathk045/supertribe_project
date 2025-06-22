@@ -47,17 +47,37 @@ export const useStories = () => {
     setStories(prev => prev.filter(story => story.id !== storyId))
   }
 
+  // Group stories by user for carousel display
+  const groupedStories = stories.reduce((acc, story) => {
+    const userId = story.profiles?.id || story.creator_id
+    if (!userId) return acc
+    if (!acc[userId]) acc[userId] = []
+    acc[userId].push(story)
+    return acc
+  }, {})
+
+  // For carousel: show only the latest story per user
+  const storiesForCarousel = Object.values(groupedStories)
+    .map(storyArr => storyArr.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0])
+
+  // Helper: get all stories for a user, sorted by created_at
+  const getUserStories = (userId) => {
+    return (groupedStories[userId] || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+  }
+
   useEffect(() => {
     loadStories()
   }, [])
 
   return {
-    stories,
+    stories, // all stories (flat)
+    storiesForCarousel, // for carousel (one per user)
     loading,
     error,
     loadStories,
     viewStory,
     addNewStory,
-    removeStory
+    removeStory,
+    getUserStories
   }
 }

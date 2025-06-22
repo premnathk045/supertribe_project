@@ -19,7 +19,7 @@ function TopNavigation({ onSettingsClick }) {
         <div className="max-w-lg mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center">
             <div className="text-2xl font-bold gradient-text">
-              CreatorSpace
+              SuperTribe
             </div>
           </Link>
 

@@ -5,15 +5,18 @@ import { useStories } from '../../hooks/useStories'
 import { formatDistanceToNow } from 'date-fns'
 
 function StoryViewerModal({ isOpen, story, onClose }) {
-  const { stories, viewStory } = useStories()
+  // story: { userId, stories }
+  const { viewStory } = useStories()
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0)
   const [progress, setProgress] = useState(0)
 
-  useEffect(() => {
-    if (!isOpen || !story) return
+  // Get the stories for the selected user
+  const userStories = story?.stories || []
+  const currentStory = userStories[currentStoryIndex]
 
-    const storyIndex = stories.findIndex(s => s.id === story.id)
-    setCurrentStoryIndex(storyIndex >= 0 ? storyIndex : 0)
+  useEffect(() => {
+    if (!isOpen || !userStories.length) return
+    setCurrentStoryIndex(0)
     setProgress(0)
   }, [isOpen, story])
 
@@ -24,11 +27,11 @@ function StoryViewerModal({ isOpen, story, onClose }) {
       setProgress(prev => {
         if (prev >= 100) {
           // Auto advance to next story
-          if (currentStoryIndex < stories.length - 1) {
+          if (currentStoryIndex < userStories.length - 1) {
             setCurrentStoryIndex(currentStoryIndex + 1)
             // Mark current story as viewed when auto-advancing
-            if (stories[currentStoryIndex]) {
-              viewStory(stories[currentStoryIndex].id)
+            if (userStories[currentStoryIndex]) {
+              viewStory(userStories[currentStoryIndex].id)
             }
             return 0
           } else {
@@ -41,16 +44,14 @@ function StoryViewerModal({ isOpen, story, onClose }) {
     }, 100)
 
     return () => clearInterval(timer)
-  }, [isOpen, currentStoryIndex, onClose])
+  }, [isOpen, currentStoryIndex, onClose, userStories])
 
   // Mark story as viewed when opened
   useEffect(() => {
-    if (isOpen && stories[currentStoryIndex]) {
-      viewStory(stories[currentStoryIndex].id)
+    if (isOpen && userStories[currentStoryIndex]) {
+      viewStory(userStories[currentStoryIndex].id)
     }
-  }, [isOpen, currentStoryIndex, stories, viewStory])
-
-  const currentStory = stories[currentStoryIndex]
+  }, [isOpen, currentStoryIndex, userStories, viewStory])
 
   const goToPrevious = () => {
     if (currentStoryIndex > 0) {
@@ -60,7 +61,7 @@ function StoryViewerModal({ isOpen, story, onClose }) {
   }
 
   const goToNext = () => {
-    if (currentStoryIndex < stories.length - 1) {
+    if (currentStoryIndex < userStories.length - 1) {
       setCurrentStoryIndex(currentStoryIndex + 1)
       setProgress(0)
     } else {
@@ -123,7 +124,7 @@ function StoryViewerModal({ isOpen, story, onClose }) {
     }
   }
 
-  if (!stories || stories.length === 0) {
+  if (!userStories || userStories.length === 0) {
     return null
   }
   return (
@@ -145,7 +146,7 @@ function StoryViewerModal({ isOpen, story, onClose }) {
           >
             {/* Progress Bars */}
             <div className="absolute top-4 left-4 right-4 z-10 flex space-x-1">
-              {stories.map((_, index) => (
+              {userStories.map((_, index) => (
                 <div key={index} className="flex-1 h-1 bg-white/30 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-white rounded-full transition-all duration-100"
@@ -211,7 +212,7 @@ function StoryViewerModal({ isOpen, story, onClose }) {
               </button>
             )}
             
-            {currentStoryIndex < stories.length - 1 && (
+            {currentStoryIndex < userStories.length - 1 && (
               <button
                 onClick={goToNext}
                 className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 bg-black/50 text-white rounded-full"
