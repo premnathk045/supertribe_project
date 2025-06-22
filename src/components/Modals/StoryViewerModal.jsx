@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiX, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 import { useStories } from '../../hooks/useStories'
@@ -6,18 +6,27 @@ import { formatDistanceToNow } from 'date-fns'
 
 function StoryViewerModal({ isOpen, story, onClose }) {
   // story: { userId, stories }
-  const { viewStory } = useStories()
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0)
   const [progress, setProgress] = useState(0)
+  const isMounted = useRef(false)
+  const closeRequested = useRef(false)
 
   // Get the stories for the selected user
   const userStories = story?.stories || []
   const currentStory = userStories[currentStoryIndex]
 
   useEffect(() => {
+    isMounted.current = true
+    return () => {
+      isMounted.current = false
+    }
+  }, [])
+
+  useEffect(() => {
     if (!isOpen || !userStories.length) return
     setCurrentStoryIndex(0)
     setProgress(0)
+    closeRequested.current = false
   }, [isOpen, story])
 
   useEffect(() => {
@@ -29,13 +38,10 @@ function StoryViewerModal({ isOpen, story, onClose }) {
           // Auto advance to next story
           if (currentStoryIndex < userStories.length - 1) {
             setCurrentStoryIndex(currentStoryIndex + 1)
-            // Mark current story as viewed when auto-advancing
-            if (userStories[currentStoryIndex]) {
-              viewStory(userStories[currentStoryIndex].id)
-            }
             return 0
           } else {
-            onClose()
+            // Instead of calling onClose directly, set a flag
+            closeRequested.current = true
             return 0
           }
         }
@@ -44,14 +50,15 @@ function StoryViewerModal({ isOpen, story, onClose }) {
     }, 100)
 
     return () => clearInterval(timer)
-  }, [isOpen, currentStoryIndex, onClose, userStories])
+  }, [isOpen, currentStoryIndex, userStories])
 
-  // Mark story as viewed when opened
+  // Effect to handle close after progress completes
   useEffect(() => {
-    if (isOpen && userStories[currentStoryIndex]) {
-      viewStory(userStories[currentStoryIndex].id)
+    if (closeRequested.current && isMounted.current) {
+      onClose()
+      closeRequested.current = false
     }
-  }, [isOpen, currentStoryIndex, userStories, viewStory])
+  }, [progress, onClose])
 
   const goToPrevious = () => {
     if (currentStoryIndex > 0) {
@@ -65,7 +72,8 @@ function StoryViewerModal({ isOpen, story, onClose }) {
       setCurrentStoryIndex(currentStoryIndex + 1)
       setProgress(0)
     } else {
-      onClose()
+      // Instead of calling onClose directly, set a flag
+      closeRequested.current = true
     }
   }
 

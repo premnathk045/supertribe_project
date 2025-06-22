@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { fetchActiveStories, markStoryAsViewed } from '../lib/stories'
+import { fetchActiveStories } from '../lib/stories'
 
 export const useStories = () => {
   const { user } = useAuth()
@@ -19,23 +19,6 @@ export const useStories = () => {
       setError(err.message)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const viewStory = async (storyId) => {
-    if (!user) return
-
-    try {
-      await markStoryAsViewed(storyId, user.id)
-      
-      // Update local state to mark as viewed
-      setStories(prev => prev.map(story => 
-        story.id === storyId 
-          ? { ...story, isViewed: true }
-          : story
-      ))
-    } catch (err) {
-      console.error('Error marking story as viewed:', err)
     }
   }
 
@@ -75,7 +58,6 @@ export const useStories = () => {
     loading,
     error,
     loadStories,
-    viewStory,
     addNewStory,
     removeStory,
     getUserStories
