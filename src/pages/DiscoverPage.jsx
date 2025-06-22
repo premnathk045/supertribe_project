@@ -19,7 +19,7 @@ function DiscoverPage() {
 
   // Search functionality
   const { results: searchResults, loading: searchLoading, search, clearResults } = useGlobalSearch()
-  const { creators: searchCreators, loading: creatorSearchLoading, searchCreators } = useCreatorSearch()
+  const { creators: searchCreatorResults, loading: creatorSearchLoading, searchCreators } = useCreatorSearch()
 
   // Category-specific creators
   const { 
@@ -66,7 +66,7 @@ function DiscoverPage() {
   const getCurrentCreators = () => {
     if (searchQuery.trim().length >= 2) {
       if (searchType === 'creators') {
-        return searchCreators
+        return searchCreatorResults
       }
       return searchResults.creators || []
     }
