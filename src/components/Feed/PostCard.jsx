@@ -14,6 +14,32 @@ import MediaCarousel from '../Media/MediaCarousel'
 function PostCard({ post, onLike, onSave, onComment, onShare, onClick }) {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
 
+  // Prepare media array: preview video (if exists) first, then media_urls
+  const media = []
+  if (post.preview_video_url) {
+    media.push({
+      type: 'video',
+      url: post.preview_video_url,
+      thumbnail: '', // Optionally add thumbnail if you have it
+      isPreview: true
+    })
+  }
+  if (Array.isArray(post.media_urls)) {
+    post.media_urls.forEach((url) => {
+      // Guess type by extension
+      const ext = url.split('.').pop().toLowerCase()
+      media.push({
+        type: ext === 'mp4' || ext === 'webm' ? 'video' : 'image',
+        url,
+        thumbnail: '', // Optionally add thumbnail if you have it
+        isPreview: false
+      })
+    })
+  }
+
+  // Determine if current media is preview (should not be blurred/locked)
+  const isCurrentPreview = media[currentMediaIndex]?.isPreview
+
   return (
     <motion.article 
       className="bg-white post-shadow border border-gray-100 overflow-hidden"
@@ -24,24 +50,21 @@ function PostCard({ post, onLike, onSave, onComment, onShare, onClick }) {
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center space-x-3">
           <img
-            src={post.user.avatar}
-            alt={post.user.displayName}
+            src={post.user?.avatar || post.profiles?.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=40'}
+            alt={post.user?.displayName || post.profiles?.display_name || 'User'}
             className="w-10 h-10 rounded-full object-cover"
           />
           <div>
             <div className="flex items-center space-x-1">
-              <h3 className="font-semibold text-gray-900">{post.user.displayName}</h3>
-              {post.user.isVerified && (
+              <h3 className="font-semibold text-gray-900">{post.user?.displayName || post.profiles?.display_name || post.user?.username || post.profiles?.username || 'Unknown'}</h3>
+              {(post.user?.isVerified || post.profiles?.is_verified) && (
                 <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs">✓</span>
                 </div>
               )}
-              {/* {post.user.isPremium && (
-                <div className="w-4 h-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
-              )} */}
             </div>
             <p className="text-sm text-gray-500">
-              {formatDistanceToNow(post.createdAt, { addSuffix: true })}
+              {formatDistanceToNow(new Date(post.createdAt || post.created_at), { addSuffix: true })}
             </p>
           </div>
         </div>
@@ -72,7 +95,8 @@ function PostCard({ post, onLike, onSave, onComment, onShare, onClick }) {
 
       {/* Media */}
       <div className="relative">
-        {post.isPremium && (
+        {/* Blur and unlock only if premium, not preview, and not unlocked */}
+        {post.is_premium && !isCurrentPreview && (
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-10 flex items-center justify-center">
             <div className="text-center text-white">
               <FiLock className="text-3xl mx-auto mb-2" />
@@ -84,12 +108,14 @@ function PostCard({ post, onLike, onSave, onComment, onShare, onClick }) {
             </div>
           </div>
         )}
-        
+
+        {/* Only allow click if not premium or is preview */}
+        {/* onClick will only trigger if not premium or is preview */}
         <MediaCarousel
-          media={post.media}
+          media={media}
           currentIndex={currentMediaIndex}
           onIndexChange={setCurrentMediaIndex}
-          onClick={() => !post.isPremium && onClick()}
+          onClick={() => (!post.is_premium || isCurrentPreview) && onClick()}
         />
       </div>
 
@@ -107,7 +133,7 @@ function PostCard({ post, onLike, onSave, onComment, onShare, onClick }) {
               <FiHeart 
                 className={`text-xl ${post.isLiked ? 'fill-current animate-heart' : ''}`} 
               />
-              <span className="font-medium">{post.likeCount}</span>
+              <span className="font-medium">{post.likeCount ?? post.like_count ?? 0}</span>
             </motion.button>
             
             <motion.button
@@ -116,7 +142,7 @@ function PostCard({ post, onLike, onSave, onComment, onShare, onClick }) {
               className="flex items-center space-x-1 text-gray-700 hover:text-primary-500 transition-colors"
             >
               <FiMessageCircle className="text-xl" />
-              <span className="font-medium">{post.commentCount}</span>
+              <span className="font-medium">{post.commentCount ?? post.comment_count ?? 0}</span>
             </motion.button>
             
             <motion.button
@@ -125,7 +151,7 @@ function PostCard({ post, onLike, onSave, onComment, onShare, onClick }) {
               className="flex items-center space-x-1 text-gray-700 hover:text-primary-500 transition-colors"
             >
               <FiShare className="text-xl" />
-              <span className="font-medium">{post.shareCount}</span>
+              <span className="font-medium">{post.shareCount ?? post.share_count ?? 0}</span>
             </motion.button>
           </div>
           
