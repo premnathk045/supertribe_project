@@ -51,7 +51,7 @@ export const createStory = async (storyData) => {
         content_type: storyData.content_type,
         media_url: storyData.media_url,
         media_path: storyData.media_path,
-        caption: storyData.caption,
+        caption: storyData.caption || null, // Ensure caption is always set
         text_content: storyData.text_content,
         text_style: storyData.text_style || {},
         background_style: storyData.background_style || {},

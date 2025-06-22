@@ -8,7 +8,7 @@ function PreviewMode({ storyData, onBack, onPublish, onUpdateData, isPublishing,
 
   const handlePublish = async () => {
     // Update story data with caption before publishing
-    onUpdateData({ caption })
+    await onUpdateData(prev => ({ ...prev, caption }))
     await onPublish()
   }
 

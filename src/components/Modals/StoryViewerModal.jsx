@@ -200,6 +200,15 @@ function StoryViewerModal({ isOpen, story, onClose }) {
               {getStoryContent(currentStory)}
             </div>
 
+            {/* Caption Overlay */}
+            {currentStory.caption && (
+              <div className="absolute bottom-24 left-0 right-0 px-6 z-20 flex justify-center pointer-events-none">
+                <div className="bg-black/60 backdrop-blur-sm rounded-xl px-4 py-2 text-white text-center text-base max-w-xs mx-auto">
+                  {currentStory.caption}
+                </div>
+              </div>
+            )}
+
             {/* Navigation Areas */}
             <button
               className="absolute left-0 top-0 w-1/3 h-full z-10"
