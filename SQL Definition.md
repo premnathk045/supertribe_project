@@ -1,5 +1,26 @@
 Supabase SQL Definition:
 
+<!-- categories SQL -->
+create table public.categories (
+  id uuid not null default gen_random_uuid (),
+  name text not null,
+  description text null,
+  icon text not null default '📁'::text,
+  slug text not null,
+  is_active boolean null default true,
+  sort_order integer null default 0,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint categories_pkey primary key (id),
+  constraint categories_name_key unique (name),
+  constraint categories_slug_key unique (slug)
+) TABLESPACE pg_default;
+
+create index IF not exists idx_categories_active on public.categories using btree (is_active, sort_order) TABLESPACE pg_default;
+
+create index IF not exists idx_categories_slug on public.categories using btree (slug) TABLESPACE pg_default;
+
+
 <!-- creator_verifications SQL -->
 create table public.creator_verifications (
   id uuid not null default gen_random_uuid (),
@@ -34,6 +55,24 @@ create table public.creator_verifications (
     )
   )
 ) TABLESPACE pg_default;
+
+
+<!--  hashtags SQL -->
+create table public.hashtags (
+  id uuid not null default gen_random_uuid (),
+  tag text not null,
+  usage_count integer null default 0,
+  trending_score numeric null default 0,
+  last_used_at timestamp with time zone null default now(),
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint hashtags_pkey primary key (id),
+  constraint hashtags_tag_key unique (tag)
+) TABLESPACE pg_default;
+
+create index IF not exists idx_hashtags_trending on public.hashtags using btree (trending_score desc, usage_count desc) TABLESPACE pg_default;
+
+create index IF not exists idx_hashtags_tag on public.hashtags using btree (tag) TABLESPACE pg_default;
 
 
 <!--  payment_methods SQL -->
@@ -79,10 +118,17 @@ create table public.post_comments (
   constraint post_comments_pkey primary key (id),
   constraint post_comments_parent_id_fkey foreign KEY (parent_id) references post_comments (id) on delete CASCADE,
   constraint post_comments_post_id_fkey foreign KEY (post_id) references posts (id) on delete CASCADE,
-  constraint post_comments_user_id_fkey foreign KEY (user_id) references auth.users (id) on delete CASCADE
+  constraint post_comments_user_id_fkey foreign KEY (user_id) references auth.users (id) on delete CASCADE,
+  constraint post_comments_user_id_profiles_fkey foreign KEY (user_id) references profiles (id)
 ) TABLESPACE pg_default;
 
 create index IF not exists idx_post_comments_post_id on public.post_comments using btree (post_id) TABLESPACE pg_default;
+
+create index IF not exists idx_post_comments_user_id on public.post_comments using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_post_comments_parent_id on public.post_comments using btree (parent_id) TABLESPACE pg_default;
+
+create index IF not exists idx_post_comments_created_at on public.post_comments using btree (created_at desc) TABLESPACE pg_default;
 
 create trigger trigger_update_comments_updated_at BEFORE
 update on post_comments for EACH row
@@ -170,6 +216,7 @@ create table public.posts (
   updated_at timestamp with time zone null default now(),
   constraint posts_pkey primary key (id),
   constraint posts_user_id_fkey foreign KEY (user_id) references auth.users (id) on delete CASCADE,
+  constraint posts_user_id_profiles_fkey foreign KEY (user_id) references profiles (id),
   constraint posts_status_check check (
     (
       status = any (
@@ -193,9 +240,30 @@ create index IF not exists idx_posts_scheduled_for on public.posts using btree (
 
 create index IF not exists idx_posts_tags on public.posts using gin (tags) TABLESPACE pg_default;
 
+create trigger trigger_posts_hashtag_usage
+after INSERT
+or
+update OF tags on posts for EACH row
+execute FUNCTION trigger_update_hashtag_usage ();
+
 create trigger trigger_update_posts_updated_at BEFORE
 update on posts for EACH row
 execute FUNCTION update_updated_at_column ();
+
+
+<!-- profile_categories SQL -->
+create table public.profile_categories (
+  profile_id uuid not null,
+  category_id uuid not null,
+  created_at timestamp with time zone null default now(),
+  constraint profile_categories_pkey primary key (profile_id, category_id),
+  constraint profile_categories_category_id_fkey foreign KEY (category_id) references categories (id) on delete CASCADE,
+  constraint profile_categories_profile_id_fkey foreign KEY (profile_id) references profiles (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_profile_categories_profile on public.profile_categories using btree (profile_id) TABLESPACE pg_default;
+
+create index IF not exists idx_profile_categories_category on public.profile_categories using btree (category_id) TABLESPACE pg_default;
 
 
 <!-- profiles SQL -->
