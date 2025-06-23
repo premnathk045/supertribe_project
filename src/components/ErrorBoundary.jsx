@@ -1,5 +1,5 @@
 import { Component } from 'react'
-import { BiError } from 'react-icons/bi'
+import { FiAlertTriangle } from 'react-icons/fi'
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -20,7 +20,7 @@ class ErrorBoundary extends Component {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
           <div className="text-center max-w-md">
-            <BiError className="text-6xl text-red-500 mx-auto mb-4" />
+            <FiAlertTriangle className="text-6xl text-red-500 mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               Oops! Something went wrong
             </h1>

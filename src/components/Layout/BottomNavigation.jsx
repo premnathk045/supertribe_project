@@ -2,10 +2,15 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { FiHome, FiSearch, FiPlusSquare, FiUser, FiMessageCircle } from 'react-icons/fi'
 import { motion } from 'framer-motion'
 import { useAuth } from '../../contexts/AuthContext'
+import { useConversations } from '../../hooks/useConversations'
 
 function BottomNavigation() {
   const location = useLocation()
   const { userProfile, isCreator } = useAuth()
+  const { conversations } = useConversations()
+  
+  // Calculate total unread messages
+  const totalUnread = conversations.reduce((sum, conv) => sum + conv.unreadCount, 0)
 
   const navItems = [
     { path: '/', icon: FiHome, label: 'Home' },
@@ -43,7 +48,13 @@ function BottomNavigation() {
                   />
                   {/* Notification badge for messages */}
                   {path === '/messages' && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary-500 rounded-full"></div>
+                    totalUnread > 0 && (
+                      <div className="absolute -top-1 -right-1 flex items-center justify-center">
+                        <div className={`${totalUnread > 9 ? 'w-5 h-5 text-xs' : 'w-4 h-4 text-xs'} bg-primary-500 rounded-full flex items-center justify-center text-white font-bold`}>
+                          {totalUnread > 99 ? '99+' : totalUnread}
+                        </div>
+                      </div>
+                    )
                   )}
                   {isActive && (
                     <motion.div
