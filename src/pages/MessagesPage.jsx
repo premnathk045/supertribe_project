@@ -24,6 +24,7 @@ import { useConversations } from '../hooks/useConversations'
 import { useMessages } from '../hooks/useMessages'
 import { usePresence } from '../hooks/usePresence'
 import LoadingSpinner from '../components/UI/LoadingSpinner'
+import { supabase } from '../lib/supabase'
 
 function MessagesPage() {
   const navigate = useNavigate()
@@ -37,6 +38,11 @@ function MessagesPage() {
   const [editingMessage, setEditingMessage] = useState(null)
   const [showOptions, setShowOptions] = useState(null)
   const [showNewChatModal, setShowNewChatModal] = useState(false)
+  const [userSearchQuery, setUserSearchQuery] = useState('')
+  const [suggestedUsers, setSuggestedUsers] = useState([])
+  const [filteredUsers, setFilteredUsers] = useState([])
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false)
+  const [userSearchError, setUserSearchError] = useState(null)
 
   // Fetch conversations
   const { 
@@ -67,6 +73,65 @@ function MessagesPage() {
     getUserStatus
   } = usePresence()
 
+  // Fetch users from the database
+  const fetchUsers = async () => {
+    if (!user) return
+    
+    try {
+      setIsLoadingUsers(true)
+      setUserSearchError(null)
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          username,
+          display_name,
+          avatar_url,
+          is_verified,
+          user_type
+        `)
+        .neq('id', user.id)
+        .limit(10)
+      
+      if (error) throw error
+      
+      setSuggestedUsers(data || [])
+      setFilteredUsers(data || [])
+    } catch (err) {
+      console.error('Error fetching users:', err)
+      setUserSearchError('Failed to load users')
+    } finally {
+      setIsLoadingUsers(false)
+    }
+  }
+
+  // Filter users based on search query
+  const filterUsers = (query) => {
+    if (!query.trim()) {
+      setFilteredUsers(suggestedUsers)
+      return
+    }
+    
+    const lowercaseQuery = query.toLowerCase().trim()
+    const filtered = suggestedUsers.filter(user => {
+      const displayName = user.display_name?.toLowerCase() || ''
+      const username = user.username?.toLowerCase() || ''
+      
+      return displayName.includes(lowercaseQuery) || 
+             username.includes(lowercaseQuery)
+    })
+    
+    setFilteredUsers(filtered)
+  }
+
+  // Handle user search input changes
+  const handleUserSearchChange = (e) => {
+    const query = e.target.value
+    setUserSearchQuery(query)
+    filterUsers(query)
+  }
+
   // Fetch presence data for conversation participants
   useEffect(() => {
     if (conversations.length > 0) {
@@ -90,6 +155,13 @@ function MessagesPage() {
       markAsRead()
     }
   }, [selectedChat, messages, markAsRead])
+
+  // Fetch users when opening the new chat modal
+  useEffect(() => {
+    if (showNewChatModal) {
+      fetchUsers()
+    }
+  }, [showNewChatModal])
 
   // Filter conversations based on search query
   const filteredConversations = searchQuery
@@ -193,28 +265,6 @@ function MessagesPage() {
       default: return 'bg-gray-400'
     }
   }
-
-  // Dummy users for new chat modal
-  const suggestedUsers = [
-    {
-      id: '123e4567-e89b-12d3-a456-426614174000',
-      display_name: 'Sarah Wilson',
-      username: 'sarahartist',
-      avatar_url: 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg?auto=compress&cs=tinysrgb&w=150'
-    },
-    {
-      id: '223e4567-e89b-12d3-a456-426614174001',
-      display_name: 'Mike Chen',
-      username: 'miketech',
-      avatar_url: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150'
-    },
-    {
-      id: '323e4567-e89b-12d3-a456-426614174002',
-      display_name: 'Alex Johnson',
-      username: 'alexj',
-      avatar_url: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=150'
-    }
-  ]
 
   return (
     <div className="h-screen bg-white flex flex-col">
@@ -715,7 +765,9 @@ function MessagesPage() {
                   <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search users..."
+                    value={userSearchQuery}
+                    onChange={handleUserSearchChange}
+                    placeholder="Search by name or username..."
                     className="w-full pl-10 pr-4 py-3 bg-gray-100 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all"
                   />
                 </div>
@@ -723,34 +775,86 @@ function MessagesPage() {
 
               {/* User List */}
               <div className="max-h-96 overflow-y-auto p-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900">Suggested</h3>
-                    <button className="text-primary-500 text-sm font-medium">
-                      See All
+                {isLoadingUsers ? (
+                  <div className="flex justify-center py-8">
+                    <LoadingSpinner size="lg" />
+                  </div>
+                ) : userSearchError ? (
+                  <div className="text-center py-8">
+                    <p className="text-red-500 mb-2">{userSearchError}</p>
+                    <button
+                      onClick={fetchUsers}
+                      className="text-primary-500 hover:text-primary-600 font-medium"
+                    >
+                      Try again
                     </button>
                   </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-gray-900">
+                        {userSearchQuery ? 'Search Results' : 'Suggested Users'}
+                      </h3>
+                      {!userSearchQuery && filteredUsers.length >= 10 && (
+                        <button 
+                          onClick={() => fetchUsers()}
+                          className="text-primary-500 text-sm font-medium"
+                        >
+                          Refresh
+                        </button>
+                      )}
+                    </div>
 
-                  {suggestedUsers.map((user) => (
-                    <motion.div
-                      key={user.id}
-                      whileHover={{ x: 4 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleStartNewConversation(user.id)}
-                      className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors"
-                    >
-                      <img
-                        src={user.avatar_url}
-                        alt={user.display_name}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                      <div>
-                        <h4 className="font-medium text-gray-900">{user.display_name}</h4>
-                        <p className="text-sm text-gray-500">@{user.username}</p>
+                    {filteredUsers.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="text-6xl mb-4">🔍</div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          No users found
+                        </h3>
+                        <p className="text-gray-600">
+                          Try searching with a different term
+                        </p>
                       </div>
-                    </motion.div>
-                  ))}
-                </div>
+                    ) : (
+                      filteredUsers.map((userProfile) => (
+                        <motion.div
+                          key={userProfile.id}
+                          whileHover={{ x: 4 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleStartNewConversation(userProfile.id)}
+                          className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors"
+                        >
+                          <div className="relative">
+                            <img
+                              src={userProfile.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150'}
+                              alt={userProfile.display_name || userProfile.username}
+                              className="w-12 h-12 rounded-full object-cover"
+                              onError={(e) => {
+                                e.target.src = 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150'
+                              }}
+                            />
+                            <div className={`absolute -bottom-1 -right-1 w-3 h-3 ${
+                              getStatusColor(userProfile.id)
+                            } border-2 border-white rounded-full`}></div>
+                          </div>
+                          <div>
+                            <div className="flex items-center space-x-1">
+                              <h4 className="font-medium text-gray-900">{userProfile.display_name || userProfile.username || 'User'}</h4>
+                              {userProfile.is_verified && (
+                                <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs">✓</span>
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-500">
+                              {userProfile.username ? `@${userProfile.username}` : 'No username'}
+                            </p>
+                          </div>
+                        </motion.div>
+                      ))
+                    )}
+                  </div>
+                )}
 
                 {/* Create Group Chat */}
                 <div className="mt-8 pt-6 border-t border-gray-200">
