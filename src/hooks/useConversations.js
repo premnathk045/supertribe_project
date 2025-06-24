@@ -22,7 +22,7 @@ export const useConversations = () => {
         .select(`
           conversation_id,
           last_read_at,
-          conversations (
+          conversations!inner (
             id,
             type,
             name,
@@ -41,7 +41,13 @@ export const useConversations = () => {
       // Fetch additional data for each conversation
       const conversationsWithDetails = await Promise.all(
         (data || []).map(async (item) => {
-          const conversation = item.conversations
+          // Make sure conversations property exists
+          if (!item.conversations) {
+            console.error('Conversation data missing:', item);
+            return null;
+          }
+          
+          const conversation = item.conversations;
           
           // Get other participants
           const { data: participants } = await supabase
@@ -120,9 +126,10 @@ export const useConversations = () => {
       )
 
       // Sort by updated_at descending
-      conversationsWithDetails.sort((a, b) => b.updatedAt - a.updatedAt)
+      const validConversations = conversationsWithDetails.filter(Boolean);
+      validConversations.sort((a, b) => b.updatedAt - a.updatedAt)
 
-      setConversations(conversationsWithDetails)
+      setConversations(validConversations)
     } catch (err) {
       console.error('Error fetching conversations:', err)
       setError('Failed to load conversations')
