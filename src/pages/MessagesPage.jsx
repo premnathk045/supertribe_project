@@ -20,6 +20,7 @@ import {
 } from 'react-icons/fi'
 import { formatDistanceToNow } from 'date-fns'
 import { useAuth } from '../contexts/AuthContext'
+import { useLongPress, isValidImage } from '../lib/messageUtils'
 import { useConversations } from '../hooks/useConversations'
 import { useMessages } from '../hooks/useMessages'
 import { usePresence } from '../hooks/usePresence'
@@ -36,13 +37,16 @@ function MessagesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [replyingTo, setReplyingTo] = useState(null)
   const [editingMessage, setEditingMessage] = useState(null)
+  const [imageFile, setImageFile] = useState(null)
   const [showOptions, setShowOptions] = useState(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null)
   const [showNewChatModal, setShowNewChatModal] = useState(false)
   const [userSearchQuery, setUserSearchQuery] = useState('')
   const [suggestedUsers, setSuggestedUsers] = useState([])
   const [filteredUsers, setFilteredUsers] = useState([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(false)
   const [userSearchError, setUserSearchError] = useState(null)
+  const fileInputRef = useRef(null)
 
   // Fetch conversations
   const { 
@@ -58,9 +62,13 @@ function MessagesPage() {
     loading: messagesLoading,
     error: messagesError,
     sending,
+    imageUpload,
     sendMessage,
+    sendImageMessage,
     editMessage,
     deleteMessage,
+    setImagePreview,
+    clearImagePreview,
     markAsRead
   } = useMessages(selectedChat?.id)
 
@@ -170,18 +178,50 @@ function MessagesPage() {
       )
     : conversations
 
+  // Handle file selection
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const validation = isValidImage(file)
+    if (!validation.valid) {
+      setShowErrorModal({
+        title: 'Invalid File',
+        message: validation.reason,
+        type: 'error'
+      })
+      return
+    }
+
+    setImageFile(file)
+    setImagePreview(file)
+  }
+
+  // Handle removing selected image
+  const handleRemoveImage = () => {
+    setImageFile(null)
+    clearImagePreview()
+  }
+
   // Handle sending a message
   const handleSendMessage = async (e) => {
     e.preventDefault()
-    if (!newMessage.trim() || !selectedChat) return
+    if ((!newMessage.trim() && !imageFile) || !selectedChat) return
 
     try {
-      await sendMessage(
-        newMessage, 
-        'text', 
-        null, 
-        replyingTo ? replyingTo.id : null
-      )
+      if (imageFile) {
+        // Send image message
+        await sendImageMessage(imageFile, newMessage)
+        setImageFile(null)
+      } else {
+        // Send text message
+        await sendMessage(
+          newMessage, 
+          'text', 
+          null, 
+          replyingTo ? replyingTo.id : null
+        )
+      }
       setNewMessage('')
       setReplyingTo(null)
       clearTypingIndicator()
@@ -227,14 +267,36 @@ function MessagesPage() {
     setNewMessage('')
   }
 
+  // Handle message deletion with confirmation
+  const handleConfirmDeleteMessage = async (message) => {
+    try {
+      await deleteMessage(message)
+      setShowDeleteConfirm(null)
+      setShowOptions(null)
+    } catch (error) {
+      console.error('Failed to delete message:', error)
+    }
+  }
+
   // Handle message deletion
   const handleDeleteMessage = async (messageId) => {
     try {
       await deleteMessage(messageId)
       setShowOptions(null)
     } catch (error) {
+      setShowErrorModal({
+        title: 'Delete Failed',
+        message: 'Could not delete this message',
+        type: 'error'
+      })
       console.error('Failed to delete message:', error)
     }
+  }
+
+  // Handle image upload error
+  const [showErrorModal, setShowErrorModal] = useState(null)
+  const handleErrorModalClose = () => {
+    setShowErrorModal(null)
   }
 
   // Start a new conversation
@@ -265,6 +327,9 @@ function MessagesPage() {
       default: return 'bg-gray-400'
     }
   }
+
+  // Setup long press handler
+  const handleLongPress = (messageId) => setShowOptions(messageId)
 
   return (
     <div className="h-screen bg-white flex flex-col">
@@ -494,6 +559,13 @@ function MessagesPage() {
                   const isOptionsOpen = showOptions === message.id
                   const isTyping = selectedChat.participants.length > 0 && 
                                   isUserTyping(selectedChat.participants[0].user_id, selectedChat.id)
+
+                  // Create long press handler
+                  const longPressProps = useLongPress(() => {
+                    if (isCurrentUser) {
+                      handleLongPress(message.id)
+                    }
+                  }, 500)
                   
                   return (
                     <div key={message.id} className="space-y-1">
@@ -519,6 +591,7 @@ function MessagesPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
                         className={`flex relative group ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                        {...(isCurrentUser ? longPressProps : {})}
                       >
                         {!isCurrentUser && (
                           <img
@@ -586,8 +659,8 @@ function MessagesPage() {
                                     <span>Edit</span>
                                   </button>
                                   <button
-                                    onClick={() => handleDeleteMessage(message.id)}
-                                    className="flex items-center space-x-2 w-full px-4 py-2 text-left hover:bg-gray-100 transition-colors text-red-600"
+                                    onClick={() => setShowDeleteConfirm(message)}
+                                    className="flex items-center space-x-2 w-full px-4 py-2 text-left hover:bg-red-50 transition-colors text-red-600"
                                   >
                                     <FiTrash2 />
                                     <span>Delete</span>
@@ -686,12 +759,47 @@ function MessagesPage() {
                 onSubmit={editingMessage ? handleEditMessage : handleSendMessage} 
                 className="flex items-center space-x-3"
               >
+                {/* Hidden file input */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept="image/*"
+                  className="hidden"
+                />
+
                 <button
                   type="button"
+                  onClick={() => fileInputRef.current?.click()}
                   className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   <FiImage className="text-xl" />
                 </button>
+                
+                {/* Image preview */}
+                {imageUpload.preview && (
+                  <div className="absolute bottom-20 left-4 right-4 bg-white rounded-lg shadow-lg border border-gray-200 p-3">
+                    <div className="flex items-start space-x-3">
+                      <div className="relative w-20 h-20">
+                        <img 
+                          src={imageUpload.preview} 
+                          alt="Upload preview" 
+                          className="w-full h-full rounded-md object-cover"
+                        />
+                        <button
+                          onClick={handleRemoveImage}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                        >
+                          <FiX className="text-xs" />
+                        </button>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">Ready to send image</p>
+                        <p className="text-xs text-gray-500">Optional: Add a caption below</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="flex-1 relative">
                   <input
@@ -713,10 +821,10 @@ function MessagesPage() {
                 
                 <button
                   type="submit"
-                  disabled={!newMessage.trim() || sending}
+                  disabled={(!newMessage.trim() && !imageFile) || sending || imageUpload.loading}
                   className="p-3 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-300 text-white rounded-full transition-colors flex items-center justify-center"
                 >
-                  {sending ? (
+                  {sending || imageUpload.loading ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : editingMessage ? (
                     <FiCheck className="text-lg" />
@@ -866,6 +974,81 @@ function MessagesPage() {
                   </button>
                 </div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={() => setShowDeleteConfirm(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Delete Message?</h3>
+              <p className="text-gray-600 mb-6">
+                This action cannot be undone. The message will be permanently deleted.
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-3 px-4 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleConfirmDeleteMessage(showDeleteConfirm)}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-3 px-4 rounded-xl transition-colors flex items-center justify-center space-x-2"
+                >
+                  <FiTrash2 className="text-sm" />
+                  <span>Delete</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Error Modal */}
+      <AnimatePresence>
+        {showErrorModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={handleErrorModalClose}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">{showErrorModal.title || 'Error'}</h3>
+              <p className="text-gray-600 mb-6">
+                {showErrorModal.message || 'An error occurred. Please try again.'}
+              </p>
+              <button
+                onClick={handleErrorModalClose}
+                className="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-4 rounded-xl transition-colors"
+              >
+                OK
+              </button>
             </motion.div>
           </motion.div>
         )}
