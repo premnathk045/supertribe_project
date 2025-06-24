@@ -266,28 +266,6 @@ function MessagesPage() {
     }
   }
 
-  // Dummy users for new chat modal
-  const suggestedUsers = [
-    {
-      id: '123e4567-e89b-12d3-a456-426614174000',
-      display_name: 'Sarah Wilson',
-      username: 'sarahartist',
-      avatar_url: 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg?auto=compress&cs=tinysrgb&w=150'
-    },
-    {
-      id: '223e4567-e89b-12d3-a456-426614174001',
-      display_name: 'Mike Chen',
-      username: 'miketech',
-      avatar_url: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150'
-    },
-    {
-      id: '323e4567-e89b-12d3-a456-426614174002',
-      display_name: 'Alex Johnson',
-      username: 'alexj',
-      avatar_url: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=150'
-    }
-  ]
-
   return (
     <div className="h-screen bg-white flex flex-col">
       {!selectedChat ? (
