@@ -21,6 +21,48 @@ create index IF not exists idx_categories_active on public.categories using btre
 create index IF not exists idx_categories_slug on public.categories using btree (slug) TABLESPACE pg_default;
 
 
+<!-- conversation_participants SQL -->
+create table public.conversation_participants (
+  conversation_id uuid not null,
+  user_id uuid not null,
+  joined_at timestamp with time zone null default now(),
+  last_read_at timestamp with time zone null default now(),
+  is_active boolean null default true,
+  constraint conversation_participants_pkey primary key (conversation_id, user_id),
+  constraint conversation_participants_conversation_id_fkey foreign KEY (conversation_id) references conversations (id) on delete CASCADE,
+  constraint conversation_participants_user_id_fkey foreign KEY (user_id) references auth.users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_conversation_participants_user_id on public.conversation_participants using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_conversation_participants_conversation_id on public.conversation_participants using btree (conversation_id) TABLESPACE pg_default;
+
+
+<!-- conversations SQL -->
+create table public.conversations (
+  id uuid not null default gen_random_uuid (),
+  type text not null default 'direct'::text,
+  name text null,
+  avatar_url text null,
+  created_by uuid not null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint conversations_pkey primary key (id),
+  constraint conversations_created_by_fkey foreign KEY (created_by) references auth.users (id) on delete CASCADE,
+  constraint conversations_type_check check (
+    (type = any (array['direct'::text, 'group'::text]))
+  )
+) TABLESPACE pg_default;
+
+create index IF not exists idx_conversations_created_by on public.conversations using btree (created_by) TABLESPACE pg_default;
+
+create index IF not exists idx_conversations_updated_at on public.conversations using btree (updated_at desc) TABLESPACE pg_default;
+
+create trigger trigger_update_conversations_updated_at BEFORE
+update on conversations for EACH row
+execute FUNCTION update_updated_at_column ();
+
+
 <!-- creator_verifications SQL -->
 create table public.creator_verifications (
   id uuid not null default gen_random_uuid (),
@@ -73,6 +115,47 @@ create table public.hashtags (
 create index IF not exists idx_hashtags_trending on public.hashtags using btree (trending_score desc, usage_count desc) TABLESPACE pg_default;
 
 create index IF not exists idx_hashtags_tag on public.hashtags using btree (tag) TABLESPACE pg_default;
+
+
+<!--  messages SQL -->
+create table public.messages (
+  id uuid not null default gen_random_uuid (),
+  conversation_id uuid not null,
+  sender_id uuid not null,
+  content text not null,
+  message_type text not null default 'text'::text,
+  media_url text null,
+  reply_to_id uuid null,
+  is_edited boolean null default false,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint messages_pkey primary key (id),
+  constraint messages_conversation_id_fkey foreign KEY (conversation_id) references conversations (id) on delete CASCADE,
+  constraint messages_reply_to_id_fkey foreign KEY (reply_to_id) references messages (id) on delete set null,
+  constraint messages_sender_id_fkey foreign KEY (sender_id) references auth.users (id) on delete CASCADE,
+  constraint messages_sender_id_profiles_fkey foreign KEY (sender_id) references profiles (id),
+  constraint messages_message_type_check check (
+    (
+      message_type = any (array['text'::text, 'image'::text, 'file'::text])
+    )
+  )
+) TABLESPACE pg_default;
+
+create index IF not exists idx_messages_conversation_id on public.messages using btree (conversation_id) TABLESPACE pg_default;
+
+create index IF not exists idx_messages_sender_id on public.messages using btree (sender_id) TABLESPACE pg_default;
+
+create index IF not exists idx_messages_created_at on public.messages using btree (created_at desc) TABLESPACE pg_default;
+
+create index IF not exists idx_messages_reply_to_id on public.messages using btree (reply_to_id) TABLESPACE pg_default;
+
+create trigger trigger_update_conversation_on_message
+after INSERT on messages for EACH row
+execute FUNCTION update_conversation_timestamp ();
+
+create trigger trigger_update_messages_updated_at BEFORE
+update on messages for EACH row
+execute FUNCTION update_updated_at_column ();
 
 
 <!--  payment_methods SQL -->
@@ -366,3 +449,31 @@ create index IF not exists idx_story_views_viewer_id on public.story_views using
 create trigger trigger_update_story_view_count
 after INSERT on story_views for EACH row
 execute FUNCTION update_story_view_count ();
+
+
+<!-- user_presence SQL -->
+create table public.user_presence (
+  user_id uuid not null,
+  status text not null default 'offline'::text,
+  last_seen_at timestamp with time zone null default now(),
+  typing_in_conversation uuid null,
+  updated_at timestamp with time zone null default now(),
+  constraint user_presence_pkey primary key (user_id),
+  constraint user_presence_typing_in_conversation_fkey foreign KEY (typing_in_conversation) references conversations (id) on delete set null,
+  constraint user_presence_user_id_fkey foreign KEY (user_id) references auth.users (id) on delete CASCADE,
+  constraint user_presence_status_check check (
+    (
+      status = any (
+        array['online'::text, 'away'::text, 'offline'::text]
+      )
+    )
+  )
+) TABLESPACE pg_default;
+
+create index IF not exists idx_user_presence_status on public.user_presence using btree (status) TABLESPACE pg_default;
+
+create index IF not exists idx_user_presence_typing on public.user_presence using btree (typing_in_conversation) TABLESPACE pg_default;
+
+create trigger trigger_update_user_presence_updated_at BEFORE
+update on user_presence for EACH row
+execute FUNCTION update_updated_at_column ();

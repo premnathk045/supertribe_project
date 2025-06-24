@@ -22,20 +22,17 @@ export const useMessages = (conversationId) => {
         .from('messages')
         .select(`
           *,
-          sender:sender_id (
+          profiles:profiles!sender_id (
             id,
-            user_metadata,
-            profiles (
-              username,
-              display_name,
-              avatar_url
-            )
+            username,
+            display_name,
+            avatar_url
           ),
           reply_to:reply_to_id (
             id,
             content,
-            sender:sender_id (
-              profiles (display_name)
+            profiles:profiles!sender_id (
+              display_name
             )
           )
         `)
@@ -46,12 +43,9 @@ export const useMessages = (conversationId) => {
 
       const transformedMessages = (data || []).map(message => ({
         ...message,
-        senderName: message.sender?.profiles?.display_name || 
-                   message.sender?.user_metadata?.full_name || 
-                   'Unknown User',
-        senderAvatar: message.sender?.profiles?.avatar_url ||
-                     message.sender?.user_metadata?.avatar_url ||
-                     'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=50'
+        senderName: message.profiles?.display_name || 'Unknown User',
+        senderAvatar: message.profiles?.avatar_url ||
+          'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=50'
       }))
 
       setMessages(transformedMessages)
@@ -83,20 +77,17 @@ export const useMessages = (conversationId) => {
         })
         .select(`
           *,
-          sender:sender_id (
+          profiles:profiles!sender_id (
             id,
-            user_metadata,
-            profiles (
-              username,
-              display_name,
-              avatar_url
-            )
+            username,
+            display_name,
+            avatar_url
           ),
           reply_to:reply_to_id (
             id,
             content,
-            sender:sender_id (
-              profiles (display_name)
+            profiles:profiles!sender_id (
+              display_name
             )
           )
         `)
@@ -107,12 +98,9 @@ export const useMessages = (conversationId) => {
       // Transform the message
       const transformedMessage = {
         ...data,
-        senderName: data.sender?.profiles?.display_name || 
-                   data.sender?.user_metadata?.full_name || 
-                   'Unknown User',
-        senderAvatar: data.sender?.profiles?.avatar_url ||
-                     data.sender?.user_metadata?.avatar_url ||
-                     'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=50'
+        senderName: data.profiles?.display_name || 'Unknown User',
+        senderAvatar: data.profiles?.avatar_url ||
+          'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=50'
       }
 
       // Optimistically add message to local state
@@ -220,20 +208,17 @@ export const useMessages = (conversationId) => {
             .from('messages')
             .select(`
               *,
-              sender:sender_id (
+              profiles:profiles!sender_id (
                 id,
-                user_metadata,
-                profiles (
-                  username,
-                  display_name,
-                  avatar_url
-                )
+                username,
+                display_name,
+                avatar_url
               ),
               reply_to:reply_to_id (
                 id,
                 content,
-                sender:sender_id (
-                  profiles (display_name)
+                profiles:profiles!sender_id (
+                  display_name
                 )
               )
             `)
@@ -243,12 +228,9 @@ export const useMessages = (conversationId) => {
           if (!error && data) {
             const transformedMessage = {
               ...data,
-              senderName: data.sender?.profiles?.display_name || 
-                         data.sender?.user_metadata?.full_name || 
-                         'Unknown User',
-              senderAvatar: data.sender?.profiles?.avatar_url ||
-                           data.sender?.user_metadata?.avatar_url ||
-                           'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=50'
+              senderName: data.profiles?.display_name || 'Unknown User',
+              senderAvatar: data.profiles?.avatar_url ||
+                'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=50'
             }
 
             setMessages(prev => {
@@ -277,20 +259,17 @@ export const useMessages = (conversationId) => {
             .from('messages')
             .select(`
               *,
-              sender:sender_id (
+              profiles:profiles!sender_id (
                 id,
-                user_metadata,
-                profiles (
-                  username,
-                  display_name,
-                  avatar_url
-                )
+                username,
+                display_name,
+                avatar_url
               ),
               reply_to:reply_to_id (
                 id,
                 content,
-                sender:sender_id (
-                  profiles (display_name)
+                profiles:profiles!sender_id (
+                  display_name
                 )
               )
             `)
@@ -300,12 +279,9 @@ export const useMessages = (conversationId) => {
           if (!error && data) {
             const transformedMessage = {
               ...data,
-              senderName: data.sender?.profiles?.display_name || 
-                         data.sender?.user_metadata?.full_name || 
-                         'Unknown User',
-              senderAvatar: data.sender?.profiles?.avatar_url ||
-                           data.sender?.user_metadata?.avatar_url ||
-                           'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=50'
+              senderName: data.profiles?.display_name || 'Unknown User',
+              senderAvatar: data.profiles?.avatar_url ||
+                'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=50'
             }
 
             setMessages(prev => 

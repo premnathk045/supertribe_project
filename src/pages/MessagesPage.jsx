@@ -491,7 +491,7 @@ function MessagesPage() {
               <div className="max-w-lg mx-auto space-y-4">
                 {messages.map((message, index) => {
                   const isCurrentUser = message.sender_id === user.id
-                  const showOptions = showOptions === message.id
+                  const isOptionsOpen = showOptions === message.id
                   const isTyping = selectedChat.participants.length > 0 && 
                                   isUserTyping(selectedChat.participants[0].user_id, selectedChat.id)
                   
@@ -569,14 +569,14 @@ function MessagesPage() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  setShowOptions(showOptions ? null : message.id)
+                                  setShowOptions(isOptionsOpen ? null : message.id)
                                 }}
                                 className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
                               >
                                 <FiMoreVertical className="text-gray-600 text-sm" />
                               </button>
                               
-                              {showOptions && (
+                              {isOptionsOpen && (
                                 <div className="absolute right-full top-0 mt-2 mr-2 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-10">
                                   <button
                                     onClick={() => startEditMessage(message)}
