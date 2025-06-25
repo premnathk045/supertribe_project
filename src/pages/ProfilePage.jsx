@@ -8,7 +8,6 @@ import { validateUsername } from '../utils/validation'
 
 // Import Profile components
 import ProfileHeader from '../components/Profile/Header/ProfileHeader'
-import ProfileStats from '../components/Profile/Header/ProfileStats'
 import StoryHighlights from '../components/Profile/Stories/StoryHighlights'
 import StoryHighlightModal from '../components/Profile/Stories/StoryHighlightModal'
 import Bio from '../components/Profile/Bio'
@@ -398,9 +397,8 @@ function ProfilePage() {
               editForm={editForm}
               editErrors={editErrors}
               handleEditInputChange={handleEditInputChange}
+              stats={profileStats}
             />
-            
-            <ProfileStats stats={profileStats} />
             
             {/* Bio */}
             {!isEditing && <Bio bio={profileData.bio} />}
