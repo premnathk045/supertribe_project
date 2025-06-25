@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { FiUserPlus } from 'react-icons/fi'
+import { Link } from 'react-router-dom'
 
 function CreatorGrid({ creators, viewMode }) {
   if (viewMode === 'list') {
@@ -15,11 +16,13 @@ function CreatorGrid({ creators, viewMode }) {
           >
             <div className="flex items-center space-x-4">
               <div className="relative">
-                <img
-                  src={creator.avatar}
-                  alt={creator.displayName}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
+                <Link to={`/user/${creator.username}`}>
+                  <img
+                    src={creator.avatar}
+                    alt={creator.displayName}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                </Link>
                 {creator.isOnline && (
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
                 )}
@@ -27,7 +30,9 @@ function CreatorGrid({ creators, viewMode }) {
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-1">
-                  <h4 className="font-semibold text-gray-900 truncate">{creator.displayName}</h4>
+                  <Link to={`/user/${creator.username}`} className="hover:underline">
+                    <h4 className="font-semibold text-gray-900 truncate">{creator.displayName}</h4>
+                  </Link>
                   {creator.isVerified && (
                     <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-white text-xs">✓</span>
@@ -37,7 +42,9 @@ function CreatorGrid({ creators, viewMode }) {
                     <div className="w-4 h-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex-shrink-0"></div>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 truncate">@{creator.username}</p>
+                <Link to={`/user/${creator.username}`} className="hover:underline">
+                  <p className="text-sm text-gray-500 truncate">@{creator.username}</p>
+                </Link>
                 <p className="text-sm text-gray-600 mt-1 line-clamp-2">{creator.bio}</p>
                 <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
                   <span>{creator.followerCount.toLocaleString()} followers</span>
@@ -70,7 +77,7 @@ function CreatorGrid({ creators, viewMode }) {
           whileHover={{ y: -4 }}
           className="bg-white p-4 rounded-xl border border-gray-200 hover:shadow-lg transition-all text-center"
         >
-          <div className="relative inline-block mb-3">
+          <Link to={`/user/${creator.username}`} className="relative inline-block mb-3">
             <img
               src={creator.avatar}
               alt={creator.displayName}
@@ -79,10 +86,12 @@ function CreatorGrid({ creators, viewMode }) {
             {creator.isOnline && (
               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white rounded-full"></div>
             )}
-          </div>
+          </Link>
           
           <div className="flex items-center justify-center space-x-1 mb-1">
-            <h4 className="font-semibold text-gray-900 truncate">{creator.displayName}</h4>
+            <Link to={`/user/${creator.username}`} className="hover:underline">
+              <h4 className="font-semibold text-gray-900 truncate">{creator.displayName}</h4>
+            </Link>
             {creator.isVerified && (
               <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-xs">✓</span>
@@ -93,7 +102,9 @@ function CreatorGrid({ creators, viewMode }) {
             )}
           </div>
           
-          <p className="text-sm text-gray-500 mb-2">@{creator.username}</p>
+          <Link to={`/user/${creator.username}`} className="hover:underline">
+            <p className="text-sm text-gray-500 mb-2">@{creator.username}</p>
+          </Link>
           <p className="text-xs text-gray-600 mb-3 line-clamp-2">{creator.bio}</p>
           
           <div className="text-xs text-gray-500 mb-3">
