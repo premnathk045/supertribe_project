@@ -1,27 +1,30 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { 
-  FiSettings, 
-  FiUserPlus, 
-  FiMessageCircle, 
-  FiGrid, 
-  FiBookmark,
-  FiHeart,
-  FiMoreHorizontal,
-  FiEdit3,
-  FiSave,
-  FiX,
-  FiCamera
-} from 'react-icons/fi'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import LoadingSpinner from '../components/UI/LoadingSpinner'
 import { validateUsername } from '../utils/validation'
 
+// Import Profile components
+import ProfileHeader from '../components/Profile/Header/ProfileHeader'
+import ProfileStats from '../components/Profile/Header/ProfileStats'
+import StoryHighlights from '../components/Profile/Stories/StoryHighlights'
+import StoryHighlightModal from '../components/Profile/Stories/StoryHighlightModal'
+import Bio from '../components/Profile/Bio'
+import ContentTabs from '../components/Profile/Content/ContentTabs'
+import ContentGrid from '../components/Profile/Content/ContentGrid'
+import ProfileActions from '../components/Profile/Actions/ProfileActions'
+
+// Import hook for story highlights
+import useStoryHighlights from '../hooks/useStoryHighlights'
+
 function ProfilePage() {
   const { username } = useParams()
+  const navigate = useNavigate()
   const { user, userProfile, updateUserProfile } = useAuth()
+  
+  // State
   const [profileData, setProfileData] = useState(null)
   const [userPosts, setUserPosts] = useState([])
   const [savedPosts, setSavedPosts] = useState([])
@@ -32,11 +35,15 @@ function ProfilePage() {
     followingCount: 0
   })
   const [loading, setLoading] = useState(true)
+  const [contentLoading, setContentLoading] = useState(true)
   const [error, setError] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [isFollowing, setIsFollowing] = useState(false)
   const [activeTab, setActiveTab] = useState('posts')
+  
+  // Story highlights state
+  const [showHighlightModal, setShowHighlightModal] = useState(false)
   
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -47,52 +54,34 @@ function ProfilePage() {
   })
   const [editErrors, setEditErrors] = useState({})
 
+  // Check if this profile belongs to the current user
   const isOwnProfile = user && profileData && user.id === profileData.id
 
+  // Get story highlights data
+  const { 
+    highlights, 
+    userStories, 
+    loading: highlightsLoading, 
+    error: highlightsError,
+    saving: savingHighlights,
+    createHighlight
+  } = useStoryHighlights(profileData?.id)
+
+  // Fetch profile data
   useEffect(() => {
     if (username) {
       fetchProfileData()
     }
   }, [username])
 
+  // Fetch posts when profile data is loaded
   useEffect(() => {
-    if (!profileData) return;
-    // Fetch posts for the user
-    const fetchUserPosts = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        // User's own posts
-        const { data: postsData, error: postsError } = await supabase
-          .from('posts')
-          .select('*')
-          .eq('user_id', profileData.id)
-          .order('created_at', { ascending: false })
-        if (postsError) throw postsError
-        setUserPosts(postsData || [])
-        // Saved posts
-        const { data: savesData, error: savesError } = await supabase
-          .from('post_saves')
-          .select('post_id, posts:post_id(*)')
-          .eq('user_id', profileData.id)
-        if (savesError) throw savesError
-        setSavedPosts((savesData || []).map(s => s.posts).filter(Boolean))
-        // Liked posts
-        const { data: likesData, error: likesError } = await supabase
-          .from('post_likes')
-          .select('post_id, posts:post_id(*)')
-          .eq('user_id', profileData.id)
-        if (likesError) throw likesError
-        setLikedPosts((likesData || []).map(l => l.posts).filter(Boolean))
-      } catch (err) {
-        setError(err.message || 'Failed to load posts')
-      } finally {
-        setLoading(false)
-      }
+    if (profileData) {
+      fetchUserContent()
     }
-    fetchUserPosts()
-  }, [profileData])
+  }, [profileData, activeTab])
 
+  // Fetch profile data from Supabase
   const fetchProfileData = async () => {
     try {
       setLoading(true)
@@ -123,13 +112,14 @@ function ProfilePage() {
         display_name: profile.display_name || '',
         bio: profile.bio || '',
         avatar_url: profile.avatar_url || '',
-        website: profile.website || '',
-        email: profile.email || '',
-        phone: profile.phone || '',
-        gender: profile.gender || '',
-        is_private: profile.is_private || false
       })
 
+      // Set profile stats (placeholder data for now)
+      setProfileStats({
+        postCount: 0,
+        followerCount: Math.floor(Math.random() * 10000),
+        followingCount: Math.floor(Math.random() * 1000)
+      })
     } catch (error) {
       console.error('Error fetching profile:', error)
       setError('An unexpected error occurred')
@@ -138,6 +128,57 @@ function ProfilePage() {
     }
   }
 
+  // Fetch user content (posts, saved, liked)
+  const fetchUserContent = async () => {
+    setContentLoading(true)
+    
+    try {
+      // Only fetch posts for the active tab to optimize performance
+      if (activeTab === 'posts') {
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('user_id', profileData.id)
+          .order('created_at', { ascending: false })
+          
+        if (postsError) throw postsError
+        setUserPosts(postsData || [])
+        
+        // Update post count in stats
+        setProfileStats(prev => ({ 
+          ...prev, 
+          postCount: postsData?.length || 0 
+        }))
+      }
+      
+      if (activeTab === 'saved' && isOwnProfile) {
+        const { data: savesData, error: savesError } = await supabase
+          .from('post_saves')
+          .select('post_id, posts:post_id(*)')
+          .eq('user_id', profileData.id)
+          
+        if (savesError) throw savesError
+        setSavedPosts((savesData || []).map(s => s.posts).filter(Boolean))
+      }
+      
+      if (activeTab === 'liked' && isOwnProfile) {
+        const { data: likesData, error: likesError } = await supabase
+          .from('post_likes')
+          .select('post_id, posts:post_id(*)')
+          .eq('user_id', profileData.id)
+          
+        if (likesError) throw likesError
+        setLikedPosts((likesData || []).map(l => l.posts).filter(Boolean))
+      }
+    } catch (err) {
+      console.error('Error fetching user content:', err)
+      // Don't set error state here to avoid blocking the UI
+    } finally {
+      setContentLoading(false)
+    }
+  }
+
+  // Validate edit form
   const validateEditForm = () => {
     const errors = {}
 
@@ -177,6 +218,7 @@ function ProfilePage() {
     return Object.keys(errors).length === 0
   }
 
+  // Handle input changes in edit form
   const handleEditInputChange = (field, value) => {
     setEditForm(prev => ({ ...prev, [field]: value }))
     
@@ -186,6 +228,7 @@ function ProfilePage() {
     }
   }
 
+  // Save profile changes
   const handleSaveProfile = async () => {
     if (!validateEditForm()) {
       return
@@ -251,6 +294,7 @@ function ProfilePage() {
     }
   }
 
+  // Cancel edit mode
   const handleCancelEdit = () => {
     setIsEditing(false)
     setEditErrors({})
@@ -259,21 +303,35 @@ function ProfilePage() {
       username: profileData.username || '',
       display_name: profileData.display_name || '',
       bio: profileData.bio || '',
-      avatar_url: profileData.avatar_url || '',
-      website: profileData.website || '',
-      email: profileData.email || '',
-      phone: profileData.phone || '',
-      gender: profileData.gender || '',
-      is_private: profileData.is_private || false
+      avatar_url: profileData.avatar_url || ''
     })
   }
+  
+  // Handle adding a new highlight
+  const handleAddHighlight = () => {
+    setShowHighlightModal(true)
+  }
+  
+  // Handle saving a highlight
+  const handleSaveHighlight = async (highlightData) => {
+    try {
+      await createHighlight(highlightData)
+      setShowHighlightModal(false)
+    } catch (error) {
+      console.error('Failed to create highlight:', error)
+      // You could show an error message here
+    }
+  }
+  
+  // Handle viewing a highlight
+  const handleViewHighlight = (highlight) => {
+    // Here you would show a story viewer modal with the highlight stories
+    console.log('View highlight:', highlight)
+    // For now, just a placeholder
+    alert(`Viewing highlight: ${highlight.title}`)
+  }
 
-  const tabs = [
-    { id: 'posts', label: 'Posts', icon: FiGrid },
-    { id: 'saved', label: 'Saved', icon: FiBookmark },
-    { id: 'liked', label: 'Liked', icon: FiHeart }
-  ]
-
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -282,6 +340,7 @@ function ProfilePage() {
     )
   }
 
+  // Error state
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -304,6 +363,7 @@ function ProfilePage() {
     )
   }
 
+  // No profile data
   if (!profileData) {
     return null
   }
@@ -330,83 +390,35 @@ function ProfilePage() {
         {/* Profile Header */}
         <div className="bg-white border-b border-gray-200">
           <div className="p-6">
-            {/* Avatar and Stats */}
-            <div className="flex items-center space-x-6 mb-6">
-              <div className="relative">
-                {isEditing ? (
-                  <div className="relative group">
-                    <img
-                      src={editForm.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150'}
-                      alt={editForm.display_name}
-                      className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
-                      onError={(e) => {
-                        e.target.src = 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150'
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer">
-                      <div className="bg-white/90 rounded-full p-2">
-                        <FiCamera className="text-gray-700 text-lg" />
-                      </div>
-                    </div>
-                    <button className="absolute -bottom-1 -right-1 bg-primary-500 hover:bg-primary-600 text-white rounded-full p-2 shadow-lg transition-colors duration-200">
-                      <FiEdit3 className="text-sm" />
-                    </button>
-                  </div>
-                ) : (
-                  <img
-                    src={profileData.avatar_url || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150'}
-                    alt={profileData.display_name}
-                    className="w-20 h-20 rounded-full object-cover"
-                    onError={(e) => {
-                      e.target.src = 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150'
-                    }}
-                  />
-                )}
-                {profileData.user_type === 'creator' && profileData.is_verified && (
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 border-3 border-white rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs">✓</span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex-1">
-                {isEditing ? (
-                  <div className="text-sm text-gray-600">
-                    <p>Edit your profile information below</p>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <h1 className="text-xl font-bold text-gray-900">{profileData.display_name}</h1>
-                      {profileData.user_type === 'creator' && profileData.is_verified && (
-                        <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs">✓</span>
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-gray-600 mb-3">@{profileData.username}</p>
-                  </div>
-                )}
-                
-                <div className="flex space-x-6 text-sm">
-                  <div className="text-center">
-                    <div className="font-bold text-gray-900">{profileStats.postCount}</div>
-                    <div className="text-gray-600">Posts</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-bold text-gray-900">{profileStats.followerCount}</div>
-                    <div className="text-gray-600">Followers</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-bold text-gray-900">{profileStats.followingCount}</div>
-                    <div className="text-gray-600">Following</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+            {/* Profile Header and Stats */}
+            <ProfileHeader 
+              profileData={profileData}
+              isOwnProfile={isOwnProfile}
+              isEditing={isEditing}
+              editForm={editForm}
+              editErrors={editErrors}
+              handleEditInputChange={handleEditInputChange}
+            />
+            
+            <ProfileStats stats={profileStats} />
+            
             {/* Bio */}
-            {isEditing ? (
+            {!isEditing && <Bio bio={profileData.bio} />}
+            
+            {/* Profile Actions */}
+            <ProfileActions 
+              isOwnProfile={isOwnProfile}
+              isEditing={isEditing}
+              isFollowing={isFollowing}
+              setIsFollowing={setIsFollowing}
+              setIsEditing={setIsEditing}
+              handleSaveProfile={handleSaveProfile}
+              handleCancelEdit={handleCancelEdit}
+              saving={saving}
+            />
+            
+            {/* Edit Form */}
+            {isEditing && (
               <div className="space-y-6 mb-8">
                 {/* Profile Information Section */}
                 <div className="bg-gray-50 rounded-xl p-6 space-y-5">
@@ -480,53 +492,10 @@ function ProfilePage() {
                   </div>
                 </div>
                 
-                {/* Contact Information Section */}
-                <div className="bg-gray-50 rounded-xl p-6 space-y-5">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+                {/* Avatar URL Field */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Photo</h3>
                   
-                  {/* Website Field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Website
-                    </label>
-                    <input
-                      type="url"
-                      value={editForm.website || ''}
-                      onChange={(e) => handleEditInputChange('website', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 hover:border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                      placeholder="https://yourwebsite.com"
-                    />
-                  </div>
-
-                  {/* Email Field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={editForm.email || ''}
-                      onChange={(e) => handleEditInputChange('email', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 hover:border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                      placeholder="your@email.com"
-                    />
-                  </div>
-
-                  {/* Phone Field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone
-                    </label>
-                    <input
-                      type="tel"
-                      value={editForm.phone || ''}
-                      onChange={(e) => handleEditInputChange('phone', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 hover:border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                      placeholder="+1 (555) 123-4567"
-                    />
-                  </div>
-
-                  {/* Avatar URL Field */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Profile Photo URL
@@ -543,335 +512,58 @@ function ProfilePage() {
                     {editErrors.avatar_url && (
                       <p className="text-red-500 text-xs mt-1">{editErrors.avatar_url}</p>
                     )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter a URL to an image (JPG, PNG, GIF)
+                    </p>
                   </div>
                 </div>
-
-                {/* Personal Information Section */}
-                <div className="bg-gray-50 rounded-xl p-6 space-y-5">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
-                  
-                  {/* Gender Field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Gender
-                    </label>
-                    <select
-                      value={editForm.gender || ''}
-                      onChange={(e) => handleEditInputChange('gender', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 hover:border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-white"
-                    >
-                      <option value="">Prefer not to say</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="non-binary">Non-binary</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Privacy Settings Section */}
-                <div className="bg-gray-50 rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Privacy Settings</h3>
-                  
-                  {/* Private Account Toggle */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium text-gray-900">Private Account</h4>
-                      <p className="text-sm text-gray-600">When your account is private, only people you approve can see your posts</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleEditInputChange('is_private', !editForm.is_private)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                        editForm.is_private ? 'bg-primary-500' : 'bg-gray-200'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          editForm.is_private ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="mb-6">
-                <p className="text-gray-900 leading-relaxed">
-                  {profileData.bio || 'No bio available.'}
-                </p>
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex space-x-3">
-              {isOwnProfile ? (
-                isEditing ? (
-                  <>
-                    <button
-                      onClick={handleSaveProfile}
-                      disabled={saving}
-                      className="flex-1 bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl disabled:shadow-md"
-                    >
-                      {saving ? (
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                          className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
-                        />
-                      ) : (
-                        <>
-                          <FiSave className="text-lg" />
-                          <span>Save Changes</span>
-                        </>
-                      )}
-                    </button>
-                    <button
-                      onClick={handleCancelEdit}
-                      disabled={saving}
-                      className="bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 text-gray-900 py-3 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 border border-gray-300"
-                    >
-                      <FiX className="text-lg" />
-                      <span>Cancel</span>
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 py-3 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 border border-gray-300"
-                  >
-                    <FiEdit3 className="text-lg" />
-                    <span>Edit Profile</span>
-                  </button>
-                )
-              ) : (
-                <>
-                  <button
-                    onClick={() => setIsFollowing(!isFollowing)}
-                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 ${
-                      isFollowing
-                        ? 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-                        : 'bg-primary-500 hover:bg-primary-600 text-white'
-                    }`}
-                  >
-                    <FiUserPlus className="text-lg" />
-                    <span>{isFollowing ? 'Following' : 'Follow'}</span>
-                  </button>
-                  
-                  <button className="bg-gray-100 hover:bg-gray-200 text-gray-900 py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2">
-                    <FiMessageCircle className="text-lg" />
-                    <span>Message</span>
-                  </button>
-                  
-                  <button className="bg-gray-100 hover:bg-gray-200 text-gray-900 p-2 rounded-lg transition-colors">
-                    <FiMoreHorizontal className="text-lg" />
-                  </button>
-                </>
-              )}
-            </div>
+            {/* Story Highlights */}
+            {!isEditing && (
+              <StoryHighlights 
+                highlights={highlights} 
+                isEditable={isOwnProfile}
+                onAddHighlight={handleAddHighlight}
+                onViewHighlight={handleViewHighlight}
+                onEditHighlight={(highlight) => console.log('Edit highlight:', highlight)}
+              />
+            )}
+            
+            {/* Content Tabs (only show when not editing) */}
+            {!isEditing && (
+              <ContentTabs 
+                activeTab={activeTab} 
+                setActiveTab={setActiveTab} 
+              />
+            )}
           </div>
-
-          {/* Tabs */}
-          {!isEditing && (
-            <div className="flex border-t border-gray-200">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 py-3 flex items-center justify-center space-x-2 border-b-2 transition-colors ${
-                    activeTab === tab.id
-                      ? 'border-primary-500 text-primary-500'
-                      : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <tab.icon className="text-lg" />
-                  <span className="font-medium">{tab.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Content Grid */}
         {!isEditing && (
           <div className="p-4">
-            {activeTab === 'posts' && userPosts.length > 0 ? (
-              <div className="grid grid-cols-3 gap-1">
-                {userPosts.map((post, index) => (
-                  <motion.div
-                    key={post.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative group cursor-pointer"
-                  >
-                    {post.media_urls && post.media_urls.length > 0 ? (
-                      <img
-                        src={post.media_urls[0]}
-                        alt="Post"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-400 text-sm">No Image</span>
-                      </div>
-                    )}
-                    
-                    {/* Overlay on hover */}
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <div className="flex items-center space-x-4 text-white">
-                        <div className="flex items-center space-x-1">
-                          <FiHeart className="fill-current" />
-                          <span className="font-medium">{post.like_count || 0}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <FiMessageCircle />
-                          <span className="font-medium">{post.comment_count || 0}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Premium indicator */}
-                    {post.is_premium && (
-                      <div className="absolute top-2 right-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full">
-                        Premium
-                      </div>
-                    )}
-
-                    {/* Multiple media indicator */}
-                    {post.media_urls && post.media_urls.length > 1 && (
-                      <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
-                        1/{post.media_urls.length}
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-            ) : activeTab === 'saved' && savedPosts.length > 0 ? (
-              <div className="grid grid-cols-3 gap-1">
-                {savedPosts.map((post, index) => (
-                  <motion.div
-                    key={post.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative group cursor-pointer"
-                  >
-                    {post.media_urls && post.media_urls.length > 0 ? (
-                      <img
-                        src={post.media_urls[0]}
-                        alt="Post"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-400 text-sm">No Image</span>
-                      </div>
-                    )}
-                    
-                    {/* Overlay on hover */}
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <div className="flex items-center space-x-4 text-white">
-                        <div className="flex items-center space-x-1">
-                          <FiHeart className="fill-current" />
-                          <span className="font-medium">{post.like_count || 0}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <FiMessageCircle />
-                          <span className="font-medium">{post.comment_count || 0}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Premium indicator */}
-                    {post.is_premium && (
-                      <div className="absolute top-2 right-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full">
-                        Premium
-                      </div>
-                    )}
-
-                    {/* Multiple media indicator */}
-                    {post.media_urls && post.media_urls.length > 1 && (
-                      <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
-                        1/{post.media_urls.length}
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-            ) : activeTab === 'liked' && likedPosts.length > 0 ? (
-              <div className="grid grid-cols-3 gap-1">
-                {likedPosts.map((post, index) => (
-                  <motion.div
-                    key={post.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative group cursor-pointer"
-                  >
-                    {post.media_urls && post.media_urls.length > 0 ? (
-                      <img
-                        src={post.media_urls[0]}
-                        alt="Post"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-400 text-sm">No Image</span>
-                      </div>
-                    )}
-                    
-                    {/* Overlay on hover */}
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <div className="flex items-center space-x-4 text-white">
-                        <div className="flex items-center space-x-1">
-                          <FiHeart className="fill-current" />
-                          <span className="font-medium">{post.like_count || 0}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <FiMessageCircle />
-                          <span className="font-medium">{post.comment_count || 0}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Premium indicator */}
-                    {post.is_premium && (
-                      <div className="absolute top-2 right-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full">
-                        Premium
-                      </div>
-                    )}
-
-                    {/* Multiple media indicator */}
-                    {post.media_urls && post.media_urls.length > 1 && (
-                      <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
-                        1/{post.media_urls.length}
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">
-                  {activeTab === 'posts' ? '📝' : activeTab === 'saved' ? '🔖' : '❤️'}
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No {activeTab} yet
-                </h3>
-                <p className="text-gray-600">
-                  {activeTab === 'posts' 
-                    ? 'Posts will appear here when they\'re created'
-                    : activeTab === 'saved' 
-                    ? 'Saved posts will appear here'
-                    : 'Liked posts will appear here'
-                  }
-                </p>
-              </div>
-            )}
+            <ContentGrid 
+              activeTab={activeTab}
+              posts={[userPosts, savedPosts, likedPosts]}
+              loading={contentLoading}
+              error={null}
+              onPostClick={(post) => console.log('Post clicked:', post)}
+            />
           </div>
         )}
       </div>
+      
+      {/* Story Highlight Modal */}
+      <StoryHighlightModal
+        isOpen={showHighlightModal}
+        onClose={() => setShowHighlightModal(false)}
+        stories={userStories}
+        currentHighlights={highlights}
+        onSave={handleSaveHighlight}
+        isLoading={savingHighlights}
+      />
     </motion.div>
   )
 }
