@@ -8,6 +8,7 @@ import CreatePostPage from './pages/CreatePostPage'
 import NotificationsPage from './pages/NotificationsPage'
 import ProfilePage from './pages/ProfilePage'
 import MessagesPage from './pages/MessagesPage'
+import ProfileView from './pages/ProfileView'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import CreatorVerificationPage from './pages/CreatorVerificationPage'
 import CreatorDashboardPage from './pages/CreatorDashboardPage'
@@ -58,6 +59,11 @@ function App() {
                 <Route path="profile/:username" element={
                   <ProtectedRoute>
                     <ProfilePage />
+                  </ProtectedRoute>
+                } />
+                <Route path="user/:username" element={
+                  <ProtectedRoute requireAuth={false}>
+                    <ProfileView />
                   </ProtectedRoute>
                 } />
                 <Route path="messages" element={
