@@ -1,13 +1,14 @@
 import { motion } from 'framer-motion'
 import { FiEdit3, FiCamera } from 'react-icons/fi'
 
-function ProfileHeader({ 
+function ProfileHeader({
   profileData, 
   isOwnProfile, 
   isEditing, 
   editForm, 
   editErrors, 
-  handleEditInputChange 
+  handleEditInputChange,
+  stats
 }) {
   return (
     <div className="flex items-center space-x-6 mb-6">
@@ -66,6 +67,22 @@ function ProfileHeader({
             <p className="text-gray-600 mb-3">@{profileData.username}</p>
           </div>
         )}
+        
+        {/* Stats (merged from ProfileStats component) */}
+        <div className="flex space-x-6 text-sm">
+          <div className="text-center">
+            <div className="font-bold text-gray-900">{stats.postCount}</div>
+            <div className="text-gray-600">Posts</div>
+          </div>
+          <div className="text-center">
+            <div className="font-bold text-gray-900">{stats.followerCount}</div>
+            <div className="text-gray-600">Followers</div>
+          </div>
+          <div className="text-center">
+            <div className="font-bold text-gray-900">{stats.followingCount}</div>
+            <div className="text-gray-600">Following</div>
+          </div>
+        </div>
       </div>
     </div>
   )
