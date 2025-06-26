@@ -8,7 +8,9 @@ import {
   FiShare, 
   FiBookmark,
   FiMoreHorizontal,
-  FiLock
+  FiLock,
+  FiFlag,
+  FiEye
 } from 'react-icons/fi'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -34,6 +36,9 @@ function PostView() {
   const [isLiked, setIsLiked] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
+  const [commentCount, setCommentCount] = useState(0)
+  const [shareCount, setShareCount] = useState(0)
+  const [viewCount, setViewCount] = useState(0)
   const [interactionLoading, setInteractionLoading] = useState(false)
   
   // Comments using the comments hook
@@ -48,7 +53,9 @@ function PostView() {
   
   // Fetch post data
   useEffect(() => {
-    fetchPostData()
+    if (postId) {
+      fetchPostData()
+    }
   }, [postId])
   
   const fetchPostData = async () => {
@@ -115,15 +122,14 @@ function PostView() {
           isVerified: data.profiles?.is_verified || false,
           isPremium: data.profiles?.user_type === 'creator' && data.profiles?.is_verified
         },
-        likeCount: data.like_count || 0,
-        commentCount: data.comment_count || 0,
-        shareCount: data.share_count || 0,
-        viewCount: data.view_count || 0,
         createdAt: new Date(data.created_at)
       }
       
       setPost(processedPost)
-      setLikeCount(processedPost.likeCount)
+      setLikeCount(data.like_count || 0)
+      setCommentCount(data.comment_count || 0)
+      setShareCount(data.share_count || 0)
+      setViewCount(data.view_count || 0)
       
       // Record view if not own post
       if (user && user.id !== data.user_id) {
@@ -159,6 +165,8 @@ function PostView() {
       navigate('/?auth=signin')
       return
     }
+    
+    if (interactionLoading) return
     
     try {
       setInteractionLoading(true)
@@ -203,6 +211,8 @@ function PostView() {
       return
     }
     
+    if (interactionLoading) return
+    
     try {
       setInteractionLoading(true)
       
@@ -239,16 +249,33 @@ function PostView() {
   
   // Handle share
   const handleShare = () => {
+    // Increment share count optimistically
+    setShareCount(prev => prev + 1)
+    
     if (navigator.share) {
       navigator.share({
         title: post.content?.substring(0, 50) || 'Check out this post',
         text: post.content?.substring(0, 100) || 'Check out this post',
         url: window.location.href
-      }).catch(err => console.error('Error sharing:', err))
+      }).catch(err => {
+        console.error('Error sharing:', err)
+        // Revert share count on error
+        setShareCount(prev => prev - 1)
+      })
     } else {
       // Fallback
       alert('Share URL copied to clipboard!')
       navigator.clipboard.writeText(window.location.href)
+      
+      // Update share count in database
+      if (user) {
+        supabase.rpc('increment_post_share_count', { post_id: postId })
+          .catch(err => {
+            console.error('Error incrementing share count:', err)
+            // Revert share count on error
+            setShareCount(prev => prev - 1)
+          })
+      }
     }
   }
   
@@ -261,6 +288,8 @@ function PostView() {
     
     try {
       await addComment(content)
+      // Update comment count optimistically
+      setCommentCount(prev => prev + 1)
     } catch (err) {
       console.error('Error adding comment:', err)
     }
@@ -270,15 +299,21 @@ function PostView() {
   const handleDeleteComment = async (commentId) => {
     try {
       await deleteComment(commentId)
+      // Update comment count optimistically
+      setCommentCount(prev => Math.max(0, prev - 1))
     } catch (err) {
       console.error('Error deleting comment:', err)
     }
   }
   
-  // Handle reply
+  // Handle reply to comment
   const handleReplyToComment = (comment) => {
     // This would normally focus the comment input and add a reference
-    console.log('Reply to comment:', comment)
+    const commentInput = document.getElementById('comment-input')
+    if (commentInput) {
+      commentInput.focus()
+      commentInput.value = `@${comment.profiles?.username || 'user'} `
+    }
   }
   
   // Handle report
@@ -308,7 +343,7 @@ function PostView() {
       })
     }
     
-    if (Array.isArray(post.media_urls)) {
+    if (Array.isArray(post.media_urls) && post.media_urls.length > 0) {
       post.media_urls.forEach((url) => {
         // Guess type by extension
         const ext = url.split('.').pop().toLowerCase()
@@ -323,14 +358,8 @@ function PostView() {
     }
     
     // If no media, create placeholder
-    if (media.length === 0) {
-      media.push({
-        type: 'image',
-        url: 'https://images.pexels.com/photos/1149831/pexels-photo-1149831.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-        thumbnail: '',
-        isPreview: false,
-        description: "Placeholder image"
-      })
+    if (media.length === 0 && post.content) {
+      return [] // No media, just text post
     }
     
     return media
@@ -397,12 +426,15 @@ function PostView() {
             <FiArrowLeft className="text-xl" />
           </button>
           <h1 className="font-semibold">Post</h1>
-          <button
-            onClick={() => {}} // Could open a menu
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <FiMoreHorizontal className="text-xl" />
-          </button>
+          <div className="relative group">
+            <button
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <FiMoreHorizontal className="text-xl" />
+            </button>
+            
+            {/* Post options dropdown could go here */}
+          </div>
         </div>
       </div>
       
@@ -430,34 +462,58 @@ function PostView() {
             </div>
           </Link>
           
-          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <FiMoreHorizontal className="text-gray-600" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => {
+                const menuOptions = [
+                  { label: 'Report post', icon: FiFlag, action: handleReport },
+                  // Additional options could go here
+                ]
+                // This would typically open a dropdown menu
+                handleReport()
+              }}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <FiMoreHorizontal className="text-gray-600" />
+            </button>
+          </div>
         </div>
 
         {/* Media */}
-        <div className="relative">
-          {/* Premium Content Overlay */}
-          {shouldLockCurrentMedia() && (
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-10 flex items-center justify-center">
-              <div className="text-center text-white">
-                <FiLock className="text-3xl mx-auto mb-2" />
-                <p className="font-semibold">Premium Content</p>
-                <p className="text-sm opacity-90">${post.price}</p>
-                <button className="mt-3 bg-white text-black px-4 py-2 rounded-full font-medium hover:bg-gray-100 transition-colors">
-                  Unlock
-                </button>
+        {media.length > 0 && (
+          <div className="relative">
+            {/* Premium Content Overlay */}
+            {shouldLockCurrentMedia() && (
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-10 flex items-center justify-center">
+                <div className="text-center text-white">
+                  <FiLock className="text-3xl mx-auto mb-2" />
+                  <p className="font-semibold">Premium Content</p>
+                  <p className="text-sm opacity-90">${post.price}</p>
+                  <button 
+                    className="mt-3 bg-white text-black px-4 py-2 rounded-full font-medium hover:bg-gray-100 transition-colors"
+                    onClick={() => {
+                      if (!user) {
+                        navigate('/?auth=signin')
+                      } else {
+                        // Open purchase modal
+                        alert('Premium content purchase would open here')
+                      }
+                    }}
+                  >
+                    Unlock for ${post.price}
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Media Content */}
-          <MediaCarousel
-            media={media}
-            currentIndex={currentMediaIndex}
-            onIndexChange={setCurrentMediaIndex}
-          />
-        </div>
+            {/* Media Content */}
+            <MediaCarousel
+              media={media}
+              currentIndex={currentMediaIndex}
+              onIndexChange={setCurrentMediaIndex}
+            />
+          </div>
+        )}
 
         {/* Post Content */}
         <div className="p-4">
@@ -481,51 +537,56 @@ function PostView() {
           {/* Post Stats and Actions */}
           <div className="flex items-center justify-between py-4 border-t border-b border-gray-200">
             <div className="flex items-center space-x-6">
-              <button 
+              <motion.button 
+                whileTap={{ scale: 0.95 }}
                 onClick={handleLikeToggle}
                 disabled={interactionLoading}
                 className={`flex items-center space-x-1 ${
                   isLiked ? 'text-red-500' : 'text-gray-700 hover:text-red-500'
                 } transition-colors`}
               >
-                <FiHeart className={isLiked ? 'fill-current' : ''} />
+                <FiHeart className={`text-xl ${isLiked ? 'fill-current' : ''}`} />
                 <span className="font-medium">{likeCount}</span>
-              </button>
+              </motion.button>
               
-              <button 
+              <motion.button 
+                whileTap={{ scale: 0.95 }}
                 className="flex items-center space-x-1 text-gray-700 hover:text-primary-500 transition-colors"
                 onClick={() => {
                   // Focus comment input
                   document.getElementById('comment-input')?.focus()
                 }}
               >
-                <FiMessageCircle />
-                <span className="font-medium">{post.commentCount}</span>
-              </button>
+                <FiMessageCircle className="text-xl" />
+                <span className="font-medium">{commentCount}</span>
+              </motion.button>
               
-              <button 
+              <motion.button 
+                whileTap={{ scale: 0.95 }}
                 onClick={handleShare}
                 className="flex items-center space-x-1 text-gray-700 hover:text-primary-500 transition-colors"
               >
-                <FiShare />
-                <span className="font-medium">{post.shareCount}</span>
-              </button>
+                <FiShare className="text-xl" />
+                <span className="font-medium">{shareCount}</span>
+              </motion.button>
             </div>
             
-            <button 
+            <motion.button 
+              whileTap={{ scale: 0.95 }}
               onClick={handleSaveToggle}
               disabled={interactionLoading}
               className={`${
                 isSaved ? 'text-primary-500' : 'text-gray-700 hover:text-primary-500'
               } transition-colors`}
             >
-              <FiBookmark className={isSaved ? 'fill-current' : ''} />
-            </button>
+              <FiBookmark className={`text-xl ${isSaved ? 'fill-current' : ''}`} />
+            </motion.button>
           </div>
 
           {/* Post Stats */}
-          <div className="py-3 text-sm text-gray-500">
-            <span>{post.viewCount} views</span>
+          <div className="py-3 text-sm text-gray-500 flex items-center space-x-1">
+            <FiEye className="text-gray-400" />
+            <span>{viewCount.toLocaleString()} views</span>
           </div>
 
           {/* Comments Section */}
@@ -537,6 +598,7 @@ function PostView() {
             {/* Comment Input */}
             <div className="mb-6">
               <CommentForm
+                id="comment-input"
                 onSubmit={handleAddComment}
                 submitting={submitting}
                 placeholder="Add a comment..."
