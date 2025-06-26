@@ -68,13 +68,6 @@ function ProfileView() {
     }
   }, [profileData])
   
-  // Check if following
-  useEffect(() => {
-    if (user && profileData) {
-      checkFollowStatus()
-    }
-  }, [user, profileData])
-
   // Fetch profile data from Supabase
   const fetchProfileData = async () => {
     try {
