@@ -10,9 +10,8 @@ import LoadingSpinner from '../components/UI/LoadingSpinner'
 import ProfileHeader from '../components/Profile/Header/ProfileHeader'
 import StoryHighlights from '../components/Profile/Stories/StoryHighlights'
 import Bio from '../components/Profile/Bio'
-import ContentTabs from '../components/Profile/Content/ContentTabs'
-import ContentGrid from '../components/Profile/Content/ContentGrid'
 import ViewProfileActions from '../components/Profile/Actions/ViewProfileActions'
+import ProfileTabView from '../components/Profile/Content/ProfileTabView'
 
 // Import hook for story highlights
 import useStoryHighlights from '../hooks/useStoryHighlights'
@@ -31,9 +30,8 @@ function ProfileView() {
     followingCount: 0
   })
   const [loading, setLoading] = useState(true)
-  const [contentLoading, setContentLoading] = useState(true)
+  const [postsLoading, setPostsLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [activeTab, setActiveTab] = useState('posts')
   const [isFollowing, setIsFollowing] = useState(false)
   
   // Get story highlights data (view-only)
@@ -53,7 +51,7 @@ function ProfileView() {
   // Fetch posts when profile data is loaded
   useEffect(() => {
     if (profileData) {
-      fetchUserContent()
+      fetchUserPosts()
     }
   }, [profileData])
   
@@ -133,17 +131,24 @@ function ProfileView() {
   }
 
   // Fetch user content
-  const fetchUserContent = async () => {
-    setContentLoading(true)
+  const fetchUserPosts = async () => {
+    setPostsLoading(true)
     
     try {
       // Fetch posts
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (
+            username,
+            display_name,
+            avatar_url,
+            is_verified
+          )
+        `)
         .eq('user_id', profileData.id)
         .eq('status', 'published')
-        .eq('is_premium', false) // Only show public posts in view
         .order('created_at', { ascending: false })
         
       if (postsError) throw postsError
@@ -158,7 +163,7 @@ function ProfileView() {
       console.error('Error fetching user content:', err)
       // Don't set error state here to avoid blocking the UI
     } finally {
-      setContentLoading(false)
+      setPostsLoading(false)
     }
   }
   
@@ -293,9 +298,9 @@ function ProfileView() {
       </div>
     
       <div className="max-w-lg mx-auto">
-        {/* Profile Content */}
+        {/* Profile Header Section */}
         <div className="bg-white border-b border-gray-200">
-          <div className="p-6">
+          <div className="p-6 pb-0">
             {/* Profile Header and Stats */}
             <ProfileHeader 
               profileData={profileData}
@@ -323,36 +328,17 @@ function ProfileView() {
               />
             )}
             
-            {/* Content Tabs (only Posts tab for view mode) */}
-            <div className="flex border-t border-gray-200">
-              <button
-                className="flex-1 py-3 flex items-center justify-center space-x-2 border-b-2 border-primary-500 text-primary-500"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="14" width="7" height="7"></rect>
-                  <rect x="3" y="14" width="7" height="7"></rect>
-                </svg>
-                <span className="font-medium">Posts</span>
-              </button>
-            </div>
           </div>
         </div>
-
-        {/* Content Grid (Posts only) */}
-        <div className="p-4">
-          <ContentGrid 
-            activeTab="posts"
-            posts={[userPosts, [], []]}
-            loading={contentLoading}
-            error={null}
-            onPostClick={(post) => console.log('Post clicked:', post)}
-          />
-        </div>
+        
+        {/* Tabbed Content View */}
+        <ProfileTabView
+          profileData={profileData}
+          userPosts={userPosts}
+          loading={postsLoading}
+          error={null}
+        />
       </div>
     </motion.div>
   )
 }
-
-export default ProfileView

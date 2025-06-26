@@ -15,13 +15,14 @@ function PostCard({ post, onLike, onSave, onComment, onShare, onClick }) {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
 
   // Prepare media array: preview video (if exists) first, then media_urls
-  const media = []
+  let media = []
   if (post.preview_video_url) {
     media.push({
       type: 'video',
       url: post.preview_video_url,
       thumbnail: '', // Optionally add thumbnail if you have it
-      isPreview: true
+      isPreview: true,
+      description: "Preview video"
     })
   }
   if (Array.isArray(post.media_urls)) {
@@ -31,10 +32,22 @@ function PostCard({ post, onLike, onSave, onComment, onShare, onClick }) {
       media.push({
         type: ext === 'mp4' || ext === 'webm' ? 'video' : 'image',
         url,
-        thumbnail: '', // Optionally add thumbnail if you have it
-        isPreview: false
+        thumbnail: url, 
+        isPreview: false,
+        description: `${post.user?.displayName || post.profiles?.display_name || ''}'s post`
       })
     })
+  }
+  
+  // If no media, create an empty array to avoid errors
+  if (media.length === 0) {
+    media = [{
+      type: 'image',
+      url: 'https://images.pexels.com/photos/1149831/pexels-photo-1149831.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+      thumbnail: '',
+      isPreview: false,
+      description: "Placeholder image"
+    }]
   }
 
   // Determine if current media is preview (should not be blurred/locked)
