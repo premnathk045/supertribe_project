@@ -66,6 +66,11 @@ function App() {
                     <ProfileView />
                   </ProtectedRoute>
                 } />
+                <Route path="post/:postId" element={
+                  <ProtectedRoute requireAuth={false}>
+                    <PostView />
+                  </ProtectedRoute>
+                } />
                 <Route path="messages" element={
                   <ProtectedRoute>
                     <MessagesPage />

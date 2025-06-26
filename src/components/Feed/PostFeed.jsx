@@ -5,8 +5,10 @@ import PostCard from './PostCard'
 import LoadingSpinner from '../UI/LoadingSpinner'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 function PostFeed({ onPostClick, onShareClick }) {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -14,6 +16,16 @@ function PostFeed({ onPostClick, onShareClick }) {
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [page, setPage] = useState(0)
+  
+  // Navigate to post detail page
+  const handlePostClick = (post) => {
+    if (onPostClick) {
+      onPostClick(post)
+    } else {
+      // Navigate to post detail page
+      navigate(`/post/${post.id}`)
+    }
+  }
   
   const { ref, inView } = useInView({
     threshold: 0.1,
@@ -269,8 +281,8 @@ function PostFeed({ onPostClick, onShareClick }) {
             onLike={() => handlePostInteraction(post.id, 'like')}
             onSave={() => handlePostInteraction(post.id, 'save')}
             onComment={() => onPostClick(post)}
-            onShare={() => onShareClick(post)}
-            onClick={() => onPostClick(post)}
+            onShare={() => onShareClick ? onShareClick(post) : handleShare(post)}
+            onClick={() => handlePostClick(post)}
           />
         </motion.div>
       ))}
