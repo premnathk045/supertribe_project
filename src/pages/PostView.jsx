@@ -425,7 +425,6 @@ function PostView() {
           >
             <FiArrowLeft className="text-xl" />
           </button>
-          <h1 className="font-semibold">Post</h1>
           <div className="relative group">
             <button
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"

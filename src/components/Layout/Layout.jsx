@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation, matchPath } from 'react-router-dom'
 import { useState } from 'react'
 import TopNavigation from './TopNavigation'
 import BottomNavigation from './BottomNavigation'
@@ -20,7 +20,11 @@ function Layout() {
   const [selectedStory, setSelectedStory] = useState(null)
   const [selectedPost, setSelectedPost] = useState(null)
 
-  const hideNavigation = location.pathname === '/create' || location.pathname === '/messages'
+  // Hide navigation on /create, /messages, and /post/:postId
+  const hideNavigation =
+    location.pathname === '/create' ||
+    location.pathname === '/messages' ||
+    matchPath('/post/:postId', location.pathname)
 
   const handleStoryPublish = (newStory) => {
     console.log('Story published:', newStory)

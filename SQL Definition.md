@@ -99,6 +99,23 @@ create table public.creator_verifications (
 ) TABLESPACE pg_default;
 
 
+<!--  followers SQL -->
+create table public.followers (
+  follower_id uuid not null,
+  following_id uuid not null,
+  created_at timestamp with time zone not null default now(),
+  constraint followers_pkey primary key (follower_id, following_id),
+  constraint followers_follower_id_fkey foreign KEY (follower_id) references profiles (id) on delete CASCADE,
+  constraint followers_following_id_fkey foreign KEY (following_id) references profiles (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_followers_follower_id on public.followers using btree (follower_id) TABLESPACE pg_default;
+
+create index IF not exists idx_followers_following_id on public.followers using btree (following_id) TABLESPACE pg_default;
+
+create index IF not exists idx_followers_created_at on public.followers using btree (created_at) TABLESPACE pg_default;
+
+
 <!--  hashtags SQL -->
 create table public.hashtags (
   id uuid not null default gen_random_uuid (),
@@ -115,6 +132,19 @@ create table public.hashtags (
 create index IF not exists idx_hashtags_trending on public.hashtags using btree (trending_score desc, usage_count desc) TABLESPACE pg_default;
 
 create index IF not exists idx_hashtags_tag on public.hashtags using btree (tag) TABLESPACE pg_default;
+
+
+<!--  highlight_stories SQL -->
+create table public.highlight_stories (
+  highlight_id uuid not null,
+  story_id uuid not null,
+  created_at timestamp with time zone null default now(),
+  constraint highlight_stories_pkey primary key (highlight_id, story_id),
+  constraint highlight_stories_highlight_id_fkey foreign KEY (highlight_id) references story_highlights (id) on delete CASCADE,
+  constraint highlight_stories_story_id_fkey foreign KEY (story_id) references stories (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_highlight_stories_story_id on public.highlight_stories using btree (story_id) TABLESPACE pg_default;
 
 
 <!--  messages SQL -->
@@ -401,6 +431,28 @@ create table public.stories (
     )
   )
 ) TABLESPACE pg_default;
+
+
+<!-- story_highlights SQL -->
+create table public.story_highlights (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid null,
+  title text not null,
+  cover_story_id uuid null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint story_highlights_pkey primary key (id),
+  constraint story_highlights_cover_story_id_fkey foreign KEY (cover_story_id) references stories (id) on delete set null,
+  constraint story_highlights_user_id_fkey foreign KEY (user_id) references profiles (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_story_highlights_user_id on public.story_highlights using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_story_highlights_cover_story on public.story_highlights using btree (cover_story_id) TABLESPACE pg_default;
+
+create trigger trigger_story_highlights_updated_at BEFORE
+update on story_highlights for EACH row
+execute FUNCTION update_updated_at_column ();
 
 
 <!-- story_interactions SQL -->

@@ -51,20 +51,20 @@ function ProfilePage() {
   // Check if this profile belongs to the current user
   const isOwnProfile = user && profileData && user.id === profileData.id
 
-  // Use follow hook for current profile - only if not own profile
+  // Use follow hook for current profile - always use profileData?.id
   const {
     isFollowing,
     followerCount,
     followingCount,
     loading: followLoading,
     toggleFollow
-  } = useFollow(isOwnProfile ? null : profileData?.id)
+  } = useFollow(profileData?.id)
 
   // Combined stats object
   const profileStats = {
     postCount: userPosts?.length || 0,
-    followerCount: isOwnProfile ? followerCount : 0,
-    followingCount: isOwnProfile ? followingCount : 0
+    followerCount,
+    followingCount
   }
 
   // Get story highlights data
