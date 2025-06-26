@@ -342,3 +342,6 @@ function ProfileView() {
     </motion.div>
   )
 }
+
+
+export default ProfileView
