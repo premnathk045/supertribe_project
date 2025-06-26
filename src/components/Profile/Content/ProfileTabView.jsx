@@ -4,6 +4,7 @@ import { FiGrid, FiList, FiFilter } from 'react-icons/fi'
 import ContentGrid from './ContentGrid'
 import PostsList from './PostsList'
 import SortOptionsSheet from './SortOptionsSheet'
+import { useNavigate } from 'react-router-dom'
 import LoadingSpinner from '../../UI/LoadingSpinner'
 
 const SORT_OPTIONS = [
@@ -13,6 +14,7 @@ const SORT_OPTIONS = [
 ]
 
 function ProfileTabView({ profileData, userPosts, loading, error }) {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('posts')
   const [viewMode, setViewMode] = useState('grid')
   const [sortOption, setSortOption] = useState(SORT_OPTIONS[0])
@@ -144,7 +146,7 @@ function ProfileTabView({ profileData, userPosts, loading, error }) {
               {activeTab === 'posts' ? (
                 sortedPosts.length > 0 ? (
                   <PostsList 
-                    posts={sortedPosts} 
+                    posts={sortedPosts}
                     profileData={profileData}
                   />
                 ) : (
