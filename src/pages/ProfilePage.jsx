@@ -121,7 +121,8 @@ function ProfilePage() {
         username: profile.username || '',
         display_name: profile.display_name || '',
         bio: profile.bio || '',
-        avatar_url: profile.avatar_url || '',
+        avatar_url: profile.avatar_url || ''
+      })
     } catch (error) {
       console.error('Error fetching profile:', error)
       setError('An unexpected error occurred')
@@ -139,6 +140,11 @@ function ProfilePage() {
       if (activeTab === 'posts') {
         const { data: postsData, error: postsError } = await supabase
           .from('posts')
+          .select('*')
+          .eq('user_id', profileData.id)
+          .order('created_at', { ascending: false })
+          
+        if (postsError) throw postsError
         setUserPosts(postsData || [])
         
         // Update post count in stats
