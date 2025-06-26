@@ -8,7 +8,7 @@ function ContentItem({ post, index, onClick }) {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: index * 0.1 }}
       className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative group cursor-pointer"
-      onClick={() => onClick && onClick(post)}
+      onClick={() => onClick?.(post)}
     >
       {post.media_urls && post.media_urls.length > 0 ? (
         <img
