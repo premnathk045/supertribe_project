@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion'
-import { FiUserPlus, FiMessageCircle, FiMoreHorizontal, FiEdit3, FiSave, FiX } from 'react-icons/fi'
+import { FiMessageCircle, FiMoreHorizontal, FiEdit3, FiSave, FiX } from 'react-icons/fi'
+import FollowButton from './FollowButton'
 
-function ProfileActions({ 
+function ProfileActions({
   isOwnProfile, 
   isEditing, 
   isFollowing,
-  setIsFollowing,
+  onToggleFollow,
   setIsEditing, 
   handleSaveProfile, 
   handleCancelEdit, 
@@ -54,17 +55,12 @@ function ProfileActions({
         )
       ) : (
         <>
-          <motion.button
-            onClick={() => setIsFollowing(!isFollowing)}
-            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 ${
-              isFollowing
-                ? 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-                : 'bg-primary-500 hover:bg-primary-600 text-white'
-            }`}
-          >
-            <FiUserPlus className="text-lg" />
-            <span>{isFollowing ? 'Following' : 'Follow'}</span>
-          </motion.button>
+          <FollowButton 
+            isFollowing={isFollowing}
+            onClick={onToggleFollow}
+            className="flex-1 py-2 px-4 rounded-lg font-medium"
+            username="username" // This should ideally come from profileData
+          />
           
           <motion.button className="bg-gray-100 hover:bg-gray-200 text-gray-900 py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2">
             <FiMessageCircle className="text-lg" />
