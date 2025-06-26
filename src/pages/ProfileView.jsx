@@ -274,6 +274,7 @@ function ProfileView() {
           userPosts={userPosts}
           loading={postsLoading}
           error={null}
+          navigate={navigate}
         />
       </div>
     </motion.div>

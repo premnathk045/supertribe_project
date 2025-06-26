@@ -67,8 +67,8 @@ function ContentGrid({ activeTab, posts, loading, error, onPostClick }) {
         <ContentItem 
           key={post.id} 
           post={post} 
-          index={index} 
-          onClick={onPostClick}
+          index={index}
+          onClick={() => onPostClick && onPostClick(post)}
         />
       ))}
     </div>

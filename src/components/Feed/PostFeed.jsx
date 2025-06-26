@@ -25,7 +25,7 @@ function PostFeed({ onPostClick, onShareClick }) {
   const handlePostClick = (post) => {
     if (onPostClick) {
       onPostClick(post)
-    } else {
+    } else if (post && post.id) {
       // Navigate to post detail page
       navigate(`/post/${post.id}`)
     }

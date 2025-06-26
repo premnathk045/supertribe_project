@@ -165,7 +165,7 @@ function ProfileTabView({ profileData, userPosts, loading, error }) {
                     posts={[sortedPosts.filter(post => post.media_urls && post.media_urls.length > 0), [], []]}
                     loading={false}
                     error={null}
-                    onPostClick={(post) => console.log('Post clicked:', post)}
+                    onPostClick={(post) => navigate(`/post/${post.id}`)}
                   />
                 </div>
               )}
