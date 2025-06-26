@@ -1,8 +1,54 @@
 import { motion } from 'framer-motion'
 import { FiUserPlus } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { supabase } from '../../lib/supabase'
 
 function CreatorGrid({ creators, viewMode }) {
+  // Add followerCounts state
+  const [followerCounts, setFollowerCounts] = useState({})
+  // Add postCounts state
+  const [postCounts, setPostCounts] = useState({})
+
+  useEffect(() => {
+    let isMounted = true
+    const fetchCounts = async () => {
+      const counts = {}
+      const posts = {}
+      await Promise.all(
+        creators.map(async (creator) => {
+          try {
+            // Fetch follower count
+            const { data, error } = await supabase.rpc('get_follower_count', { profile_id: creator.id })
+            if (!error && isMounted) {
+              counts[creator.id] = data
+            }
+          } catch {
+            // ignore error, fallback to 0
+          }
+          try {
+            // Fetch post count
+            const { count, error: postError } = await supabase
+              .from('posts')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', creator.id)
+            if (!postError && isMounted) {
+              posts[creator.id] = count ?? 0
+            }
+          } catch {
+            // ignore error, fallback to 0
+          }
+        })
+      )
+      if (isMounted) {
+        setFollowerCounts(counts)
+        setPostCounts(posts)
+      }
+    }
+    if (creators.length > 0) fetchCounts()
+    return () => { isMounted = false }
+  }, [creators])
+
   if (viewMode === 'list') {
     return (
       <div className="space-y-3">
@@ -47,8 +93,16 @@ function CreatorGrid({ creators, viewMode }) {
                 </Link>
                 <p className="text-sm text-gray-600 mt-1 line-clamp-2">{creator.bio}</p>
                 <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                  <span>{creator.followerCount.toLocaleString()} followers</span>
-                  <span>{creator.postCount} posts</span>
+                  <span>
+                    {followerCounts[creator.id] !== undefined
+                      ? followerCounts[creator.id].toLocaleString()
+                      : '...'} followers
+                  </span>
+                  <span>
+                    {postCounts[creator.id] !== undefined
+                      ? postCounts[creator.id].toLocaleString()
+                      : '...'} posts
+                  </span>
                 </div>
               </div>
               
@@ -108,7 +162,18 @@ function CreatorGrid({ creators, viewMode }) {
           <p className="text-xs text-gray-600 mb-3 line-clamp-2">{creator.bio}</p>
           
           <div className="text-xs text-gray-500 mb-3">
-            <span className="font-medium">{creator.followerCount.toLocaleString()}</span> followers
+            <span className="font-medium">
+              {followerCounts[creator.id] !== undefined
+                ? followerCounts[creator.id].toLocaleString()
+                : '...'}
+            </span> followers
+          </div>
+          <div className="text-xs text-gray-500 mb-1">
+            <span>
+              {postCounts[creator.id] !== undefined
+                ? postCounts[creator.id].toLocaleString()
+                : '...'} posts
+            </span>
           </div>
           
           <motion.button
