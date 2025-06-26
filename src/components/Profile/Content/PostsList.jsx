@@ -1,7 +1,10 @@
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import PostCard from '../../Feed/PostCard'
 
 function PostsList({ posts, profileData }) {
+  const navigate = useNavigate()
+  
   const handlePostLike = (postId) => {
     console.log('Like post:', postId)
     // Would implement like functionality here
@@ -24,7 +27,8 @@ function PostsList({ posts, profileData }) {
   
   const handlePostClick = (post) => {
     console.log('Open post:', post.id)
-    // Would open post detail modal
+    // Navigate to post detail page
+    navigate(`/post/${post.id}`)
   }
   
   return (

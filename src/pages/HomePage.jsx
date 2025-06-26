@@ -26,7 +26,7 @@ function HomePage() {
       {/* Posts Feed */}
       <div className="max-w-lg mx-auto">
         <PostFeed 
-          onPostClick={openPostDetail} // Opens modal in main feed
+          // Remove onPostClick to allow PostFeed to use its default navigation behavior
           onShareClick={openShareSheet}
         />
       </div>
