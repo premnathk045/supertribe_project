@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { FiArrowLeft } from 'react-icons/fi'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import { useFollow } from '../hooks/useFollow'
 import LoadingSpinner from '../components/UI/LoadingSpinner'
 
 // Import Profile components
@@ -24,15 +25,9 @@ function ProfileView() {
   // State
   const [profileData, setProfileData] = useState(null)
   const [userPosts, setUserPosts] = useState([])
-  const [profileStats, setProfileStats] = useState({
-    postCount: 0,
-    followerCount: 0,
-    followingCount: 0
-  })
   const [loading, setLoading] = useState(true)
   const [postsLoading, setPostsLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [isFollowing, setIsFollowing] = useState(false)
   
   // Get story highlights data (view-only)
   const { 
@@ -40,6 +35,24 @@ function ProfileView() {
     loading: highlightsLoading, 
     error: highlightsError
   } = useStoryHighlights(profileData?.id)
+
+  // Use follow hook
+  const {
+    isFollowing,
+    followerCount,
+    followingCount,
+    loading: followLoading,
+    actionLoading: followActionLoading,
+    toggleFollow,
+    error: followError
+  } = useFollow(profileData?.id)
+
+  // Combined stats object
+  const profileStats = {
+    postCount: userPosts?.length || 0,
+    followerCount,
+    followingCount
+  }
 
   // Fetch profile data
   useEffect(() => {
@@ -66,7 +79,7 @@ function ProfileView() {
   const fetchProfileData = async () => {
     try {
       setLoading(true)
-      setError(null)
+      setError(null) 
 
       // Fetch profile data
       const { data: profile, error: profileError } = await supabase
@@ -93,9 +106,6 @@ function ProfileView() {
 
       setProfileData(profile)
 
-      // Fetch profile stats
-      fetchProfileStats(profile.id)
-
     } catch (error) {
       console.error('Error fetching profile:', error)
       setError('An unexpected error occurred')
@@ -104,32 +114,6 @@ function ProfileView() {
     }
   }
   
-  // Fetch profile stats
-  const fetchProfileStats = async (profileId) => {
-    try {
-      // Fetch post count
-      const { data: postsData, error: postsCountError } = await supabase
-        .from('posts')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', profileId)
-        .eq('status', 'published')
-      
-      // Fetch follower count (placeholder - would use a real followers table)
-      const followerCount = Math.floor(Math.random() * 10000)
-      
-      // Fetch following count (placeholder - would use a real following table)
-      const followingCount = Math.floor(Math.random() * 1000)
-      
-      setProfileStats({
-        postCount: postsCountError ? 0 : postsData?.length || 0,
-        followerCount,
-        followingCount
-      })
-    } catch (error) {
-      console.error('Error fetching profile stats:', error)
-    }
-  }
-
   // Fetch user content
   const fetchUserPosts = async () => {
     setPostsLoading(true)
@@ -154,24 +138,12 @@ function ProfileView() {
       if (postsError) throw postsError
       setUserPosts(postsData || [])
       
-      // Update post count in stats
-      setProfileStats(prev => ({ 
-        ...prev, 
-        postCount: postsData?.length || 0 
-      }))
     } catch (err) {
       console.error('Error fetching user content:', err)
       // Don't set error state here to avoid blocking the UI
     } finally {
       setPostsLoading(false)
     }
-  }
-  
-  // Check if current user follows the profile
-  const checkFollowStatus = async () => {
-    // This is a placeholder - you would check a real followers table
-    // In this example, we'll simulate a 30% chance of following
-    setIsFollowing(Math.random() < 0.3)
   }
   
   // Toggle follow status
@@ -181,37 +153,7 @@ function ProfileView() {
       return
     }
     
-    try {
-      // Update local state first (optimistic update)
-      setIsFollowing(prev => !prev)
-      setProfileStats(prev => ({
-        ...prev,
-        followerCount: prev.followerCount + (isFollowing ? -1 : 1)
-      }))
-      
-      // Here you would call your API to update the following status
-      // For demonstration, we'll simulate API call
-      const success = await new Promise((resolve) => {
-        setTimeout(() => resolve(true), 500)
-      })
-      
-      if (!success) {
-        // If API call fails, revert state
-        setIsFollowing(prev => !prev)
-        setProfileStats(prev => ({
-          ...prev,
-          followerCount: prev.followerCount + (isFollowing ? 1 : -1)
-        }))
-      }
-    } catch (error) {
-      // If error occurs, revert state
-      setIsFollowing(prev => !prev)
-      setProfileStats(prev => ({
-        ...prev,
-        followerCount: prev.followerCount + (isFollowing ? 1 : -1)
-      }))
-      console.error('Error toggling follow status:', error)
-    }
+    await toggleFollow()
   }
   
   // Handle view highlight
@@ -241,7 +183,7 @@ function ProfileView() {
   }
 
   // Loading state
-  if (loading) {
+  if (loading || followLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <LoadingSpinner size="lg" />
@@ -250,13 +192,13 @@ function ProfileView() {
   }
 
   // Error state
-  if (error) {
+  if (error || followError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="text-center max-w-md">
           <div className="text-6xl mb-6">😕</div>
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            {error}
+            {error || followError}
           </h1>
           <p className="text-gray-600 mb-6">
             The profile you're looking for doesn't exist or couldn't be loaded.
@@ -314,7 +256,9 @@ function ProfileView() {
             
             {/* Profile Actions (Follow, Message) */}
             <ViewProfileActions
+              profileData={profileData}
               isFollowing={isFollowing}
+              isLoading={followActionLoading}
               onToggleFollow={handleToggleFollow}
               onSendMessage={handleSendMessage}
             />

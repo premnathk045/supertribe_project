@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../contexts/AuthContext'
+import { useFollow } from '../hooks/useFollow'
 import { supabase } from '../lib/supabase'
 import LoadingSpinner from '../components/UI/LoadingSpinner'
 import { validateUsername } from '../utils/validation'
@@ -28,17 +29,11 @@ function ProfilePage() {
   const [userPosts, setUserPosts] = useState([])
   const [savedPosts, setSavedPosts] = useState([])
   const [likedPosts, setLikedPosts] = useState([])
-  const [profileStats, setProfileStats] = useState({
-    postCount: 0,
-    followerCount: 0,
-    followingCount: 0
-  })
   const [loading, setLoading] = useState(true)
   const [contentLoading, setContentLoading] = useState(true)
   const [error, setError] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [isFollowing, setIsFollowing] = useState(false)
   const [activeTab, setActiveTab] = useState('posts')
   
   // Story highlights state
@@ -55,6 +50,22 @@ function ProfilePage() {
 
   // Check if this profile belongs to the current user
   const isOwnProfile = user && profileData && user.id === profileData.id
+
+  // Use follow hook for current profile - only if not own profile
+  const {
+    isFollowing,
+    followerCount,
+    followingCount,
+    loading: followLoading,
+    toggleFollow
+  } = useFollow(isOwnProfile ? null : profileData?.id)
+
+  // Combined stats object
+  const profileStats = {
+    postCount: userPosts?.length || 0,
+    followerCount: isOwnProfile ? followerCount : 0,
+    followingCount: isOwnProfile ? followingCount : 0
+  }
 
   // Get story highlights data
   const { 
@@ -105,19 +116,12 @@ function ProfilePage() {
 
       setProfileData(profile)
       
-      // Initialize edit form with current data
+      // Initialize edit form with current data 
       setEditForm({
         username: profile.username || '',
         display_name: profile.display_name || '',
         bio: profile.bio || '',
-        avatar_url: profile.avatar_url || '',
-      })
-
-      // Set profile stats (placeholder data for now)
-      setProfileStats({
-        postCount: 0,
-        followerCount: Math.floor(Math.random() * 10000),
-        followingCount: Math.floor(Math.random() * 1000)
+        avatar_url: profile.avatar_url || ''
       })
     } catch (error) {
       console.error('Error fetching profile:', error)
@@ -331,7 +335,7 @@ function ProfilePage() {
   }
 
   // Loading state
-  if (loading) {
+  if (loading || (followLoading && !isOwnProfile)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <LoadingSpinner size="lg" />
@@ -340,7 +344,7 @@ function ProfilePage() {
   }
 
   // Error state
-  if (error) {
+  if (error && !isOwnProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="text-center max-w-md">
@@ -408,7 +412,7 @@ function ProfilePage() {
               isOwnProfile={isOwnProfile}
               isEditing={isEditing}
               isFollowing={isFollowing}
-              setIsFollowing={setIsFollowing}
+              onToggleFollow={toggleFollow}
               setIsEditing={setIsEditing}
               handleSaveProfile={handleSaveProfile}
               handleCancelEdit={handleCancelEdit}
