@@ -470,7 +470,7 @@ function BioPage() {
           <p className="text-gray-600 mb-6">
             {notFound 
               ? `@${username} doesn't exist or hasn't set up their bio page yet.`
-              : 'The bio page you're looking for is not available right now.'}
+              : `The bio page you're looking for is not available right now.`}
           </p>
           <Link
             to="/"
