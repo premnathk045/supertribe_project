@@ -59,3 +59,15 @@ export const validateUsername = (username) => {
 export const validateFullName = (fullName) => {
   return fullName && fullName.trim().length >= 2
 }
+
+export const validateUrl = (url) => {
+  if (!url || typeof url !== 'string') return false
+  
+  // Basic format validation
+  try {
+    const parsedUrl = new URL(url.startsWith('http') ? url : `https://${url}`)
+    return !!parsedUrl.hostname
+  } catch (e) {
+    return false
+  }
+}

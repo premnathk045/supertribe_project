@@ -299,7 +299,7 @@ function AddPostForm({ onSubmit, onCancel }) {
   }
   
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-6 border-t border-gray-200">
+    <form onSubmit={handleSubmit} className="space-y-4 p-3 md:p-6 border-t border-gray-200">
       <h3 className="text-lg font-semibold text-gray-900 mb-2">
         Add Content
       </h3>
@@ -351,14 +351,14 @@ function AddPostForm({ onSubmit, onCancel }) {
       </div>
       
       {/* URL Preview */}
-      {urlPreview && (
-        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 flex items-start space-x-4">
+      {urlPreview && ( 
+        <div className="p-3 md:p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col sm:flex-row items-start sm:space-x-4 space-y-3 sm:space-y-0">
           {urlPreview.thumbnail_url && (
-            <div className="w-16 h-16 flex-shrink-0 bg-gray-200 rounded overflow-hidden">
+            <div className="w-full sm:w-16 h-32 sm:h-16 flex-shrink-0 bg-gray-200 rounded overflow-hidden">
               <img 
                 src={urlPreview.thumbnail_url} 
                 alt="Preview" 
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-center"
                 onError={(e) => {
                   e.target.onerror = null
                   e.target.src = 'https://via.placeholder.com/150?text=No+Image'
@@ -508,17 +508,17 @@ function AddPostForm({ onSubmit, onCancel }) {
       )}
       
       {/* Form Actions */}
-      <div className="flex justify-end space-x-2 pt-4">
+      <div className="flex flex-col md:flex-row md:justify-end space-y-2 md:space-y-0 md:space-x-2 pt-4 sticky bottom-14 md:bottom-auto md:static bg-white p-2 md:p-0">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full md:w-auto px-4 py-3 md:py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full md:w-auto px-4 py-3 md:py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           Add Content
         </button>
@@ -768,14 +768,14 @@ function ContentAggregator() {
   }
   
   return (
-    <div className="divide-y divide-gray-200">
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
+    <div className="divide-y divide-gray-200 pb-20 md:pb-0">
+      <div className="p-3 md:p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 space-y-3 md:space-y-0">
           <h2 className="text-xl font-semibold text-gray-900">Content Manager</h2>
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap md:flex-nowrap gap-2 md:space-x-2">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center space-x-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center justify-center space-x-1 px-3 py-3 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors flex-1 md:flex-initial"
             >
               <FiFilter className="text-gray-500" />
               <span>Filter</span>
@@ -794,7 +794,7 @@ function ContentAggregator() {
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center space-x-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center justify-center space-x-2 px-3 py-3 md:py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors flex-1 md:flex-initial"
             >
               <FiUpload />
               <span>Bulk Upload</span>
@@ -804,7 +804,7 @@ function ContentAggregator() {
                 setShowAddForm(true)
                 setEditingPost(null)
               }}
-              className="flex items-center space-x-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center justify-center space-x-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-3 md:py-2 rounded-lg text-sm font-medium transition-colors flex-1 md:flex-initial"
             >
               <FiPlus />
               <span>Add Content</span>
@@ -814,7 +814,7 @@ function ContentAggregator() {
         
         {/* Filters Panel */}
         {showFilters && (
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="mb-6 p-3 md:p-4 bg-gray-50 rounded-lg border border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-medium text-gray-700">Filters</h3>
               <button
@@ -827,7 +827,7 @@ function ContentAggregator() {
               </button>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
               {/* Platform Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -879,21 +879,21 @@ function ContentAggregator() {
         {posts.length === 0 && !showAddForm && !loading ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
             <div className="text-5xl mb-4">📋</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Content Yet</h3>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Content</h3>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto px-4">
               Add your social media posts and other content to display on your bio page.
             </p>
-            <div className="flex justify-center space-x-4">
+            <div className="flex flex-col md:flex-row items-center justify-center space-y-3 md:space-y-0 md:space-x-4 px-4">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 md:py-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 w-full md:w-auto"
               >
                 <FiUpload />
                 <span>Bulk Upload</span>
               </button>
               <button
                 onClick={() => setShowAddForm(true)}
-                className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 md:py-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 w-full md:w-auto"
               >
                 <FiPlus />
                 <span>Add First Content</span>
@@ -924,7 +924,7 @@ function ContentAggregator() {
             </DndContext>
             
             {posts.length > 0 && (
-              <div className="mt-4 bg-blue-50 rounded-lg p-4">
+              <div className="mt-4 bg-blue-50 rounded-lg p-3 md:p-4">
                 <div className="flex items-start space-x-3">
                   <FiInfo className="text-blue-500 mt-0.5" />
                   <div className="text-sm text-blue-800">
