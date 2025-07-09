@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   FiLink, FiPlus, FiTrash2, FiImage, FiTag, FiFilter, 
   FiCheck, FiInfo, FiX, FiUpload, FiLayout, FiExternalLink,
@@ -54,13 +54,13 @@ function SortablePostItem({ post, onEdit, onDelete, onToggleVisibility }) {
       style={style}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`flex flex-col border rounded-lg ${
+      className={`flex flex-col border rounded-lg overflow-hidden ${
         post.is_visible ? 'border-gray-200' : 'border-gray-200 bg-gray-50'
-      } mb-4 overflow-hidden`}
+      } mb-4`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-100">
-        <div className="flex items-center space-x-3">
+      <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border-b border-gray-100">
+        <div className="flex items-center space-x-2">
           <div 
             className="cursor-grab p-1" 
             {...attributes} 
@@ -72,20 +72,20 @@ function SortablePostItem({ post, onEdit, onDelete, onToggleVisibility }) {
           </div>
           
           <div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 max-w-[200px] sm:max-w-none">
               <h3 className="font-medium text-gray-900">{post.title || 'Post from ' + post.platform}</h3>
               {!post.is_visible && (
                 <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded">Hidden</span>
               )}
             </div>
-            <p className="text-sm text-gray-500 truncate">{post.original_url}</p>
+            <p className="text-xs sm:text-sm text-gray-500 truncate max-w-[200px] sm:max-w-none">{post.original_url}</p>
           </div>
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 ml-auto mt-2 sm:mt-0 w-full sm:w-auto justify-end">
           <button
             onClick={() => onToggleVisibility(post)}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
             title={post.is_visible ? "Hide" : "Show"}
           >
             {post.is_visible ? <FiEye /> : <FiEyeOff />}
@@ -93,22 +93,22 @@ function SortablePostItem({ post, onEdit, onDelete, onToggleVisibility }) {
           <a
             href={post.original_url}
             target="_blank"
-            rel="noopener noreferrer"
-            className="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+            rel="noreferrer"
+            className="p-1.5 sm:p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
             title="Open original"
           >
             <FiExternalLink />
           </a>
           <button
             onClick={() => onEdit(post)}
-            className="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+            className="p-1.5 sm:p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
             title="Edit"
           >
             <FiEdit2 />
           </button>
           <button
             onClick={() => onDelete(post.id)}
-            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+            className="p-1.5 sm:p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
             title="Delete"
           >
             <FiTrash2 />
@@ -117,9 +117,9 @@ function SortablePostItem({ post, onEdit, onDelete, onToggleVisibility }) {
       </div>
       
       {/* Content Preview */}
-      <div className="p-4 flex items-center">
+      <div className="p-3 sm:p-4 flex flex-wrap sm:flex-nowrap items-start sm:items-center">
         {post.thumbnail_url ? (
-          <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 mr-4">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 mr-3 sm:mr-4">
             <img 
               src={post.thumbnail_url} 
               alt={post.title || 'Post thumbnail'} 
@@ -131,7 +131,7 @@ function SortablePostItem({ post, onEdit, onDelete, onToggleVisibility }) {
             />
           </div>
         ) : (
-          <div className="w-24 h-24 flex-shrink-0 rounded-lg bg-gray-100 flex items-center justify-center mr-4">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg bg-gray-100 flex items-center justify-center mr-3 sm:mr-4">
             <FiImage className="text-gray-400 text-2xl" />
           </div>
         )}
@@ -146,11 +146,11 @@ function SortablePostItem({ post, onEdit, onDelete, onToggleVisibility }) {
           
           {/* Tags */}
           {post.tags && post.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
+            <div className="flex flex-wrap gap-1 sm:gap-2 mt-2">
               {post.tags.map((tag, index) => (
                 <span 
                   key={index} 
-                  className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded"
+                  className="inline-block bg-gray-100 text-gray-700 text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded"
                 >
                   #{tag}
                 </span>
@@ -299,7 +299,7 @@ function AddPostForm({ onSubmit, onCancel }) {
   }
   
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-3 md:p-6 border-t border-gray-200">
+    <form onSubmit={handleSubmit} className="space-y-4 p-6 border-t border-gray-200">
       <h3 className="text-lg font-semibold text-gray-900 mb-2">
         Add Content
       </h3>
@@ -351,14 +351,14 @@ function AddPostForm({ onSubmit, onCancel }) {
       </div>
       
       {/* URL Preview */}
-      {urlPreview && ( 
-        <div className="p-3 md:p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col sm:flex-row items-start sm:space-x-4 space-y-3 sm:space-y-0">
+      {urlPreview && (
+        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 flex items-start space-x-4">
           {urlPreview.thumbnail_url && (
-            <div className="w-full sm:w-16 h-32 sm:h-16 flex-shrink-0 bg-gray-200 rounded overflow-hidden">
+            <div className="w-16 h-16 flex-shrink-0 bg-gray-200 rounded overflow-hidden">
               <img 
                 src={urlPreview.thumbnail_url} 
                 alt="Preview" 
-                className="w-full h-full object-cover object-center"
+                className="w-full h-full object-cover"
                 onError={(e) => {
                   e.target.onerror = null
                   e.target.src = 'https://via.placeholder.com/150?text=No+Image'
@@ -508,17 +508,17 @@ function AddPostForm({ onSubmit, onCancel }) {
       )}
       
       {/* Form Actions */}
-      <div className="flex flex-col md:flex-row md:justify-end space-y-2 md:space-y-0 md:space-x-2 pt-4 sticky bottom-14 md:bottom-auto md:static bg-white p-2 md:p-0">
+      <div className="flex justify-end space-x-2 pt-4">
         <button
           type="button"
           onClick={onCancel}
-          className="w-full md:w-auto px-4 py-3 md:py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="w-full md:w-auto px-4 py-3 md:py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           Add Content
         </button>
@@ -768,14 +768,14 @@ function ContentAggregator() {
   }
   
   return (
-    <div className="divide-y divide-gray-200 pb-20 md:pb-0">
-      <div className="p-3 md:p-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 space-y-3 md:space-y-0">
+    <div className="divide-y divide-gray-200">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 space-y-3 sm:space-y-0">
           <h2 className="text-xl font-semibold text-gray-900">Content Manager</h2>
-          <div className="flex flex-wrap md:flex-nowrap gap-2 md:space-x-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center justify-center space-x-1 px-3 py-3 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors flex-1 md:flex-initial"
+              className="flex items-center space-x-1 px-2 sm:px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
             >
               <FiFilter className="text-gray-500" />
               <span>Filter</span>
@@ -794,27 +794,29 @@ function ContentAggregator() {
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center justify-center space-x-2 px-3 py-3 md:py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors flex-1 md:flex-initial"
+              className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
             >
               <FiUpload />
-              <span>Bulk Upload</span>
+              <span className="hidden sm:inline">Bulk Upload</span>
+              <span className="sm:hidden">Upload</span>
             </button>
             <button
               onClick={() => {
                 setShowAddForm(true)
                 setEditingPost(null)
               }}
-              className="flex items-center justify-center space-x-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-3 md:py-2 rounded-lg text-sm font-medium transition-colors flex-1 md:flex-initial"
+              className="flex items-center space-x-1 sm:space-x-2 bg-primary-500 hover:bg-primary-600 text-white px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
               <FiPlus />
-              <span>Add Content</span>
+              <span className="hidden sm:inline">Add Content</span>
+              <span className="sm:hidden">Add</span>
             </button>
           </div>
         </div>
         
         {/* Filters Panel */}
         {showFilters && (
-          <div className="mb-6 p-3 md:p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="mb-5 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-medium text-gray-700">Filters</h3>
               <button
@@ -827,7 +829,7 @@ function ContentAggregator() {
               </button>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {/* Platform Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -877,23 +879,23 @@ function ContentAggregator() {
         )}
         
         {posts.length === 0 && !showAddForm && !loading ? (
-          <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg border border-gray-200">
             <div className="text-5xl mb-4">📋</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Content</h3>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto px-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1 sm:mb-2">No Content Yet</h3>
+            <p className="text-gray-600 mb-4 sm:mb-6 max-w-md mx-auto text-sm sm:text-base px-4">
               Add your social media posts and other content to display on your bio page.
             </p>
-            <div className="flex flex-col md:flex-row items-center justify-center space-y-3 md:space-y-0 md:space-x-4 px-4">
+            <div className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-4 px-4">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 md:py-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 w-full md:w-auto"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 sm:px-6 py-3 sm:py-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
               >
                 <FiUpload />
                 <span>Bulk Upload</span>
               </button>
               <button
                 onClick={() => setShowAddForm(true)}
-                className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 md:py-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 w-full md:w-auto"
+                className="bg-primary-500 hover:bg-primary-600 text-white px-4 sm:px-6 py-3 sm:py-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
               >
                 <FiPlus />
                 <span>Add First Content</span>
@@ -924,10 +926,10 @@ function ContentAggregator() {
             </DndContext>
             
             {posts.length > 0 && (
-              <div className="mt-4 bg-blue-50 rounded-lg p-3 md:p-4">
+              <div className="mt-4 bg-blue-50 rounded-lg p-3 sm:p-4">
                 <div className="flex items-start space-x-3">
-                  <FiInfo className="text-blue-500 mt-0.5" />
-                  <div className="text-sm text-blue-800">
+                  <FiInfo className="text-blue-500 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs sm:text-sm text-blue-800">
                     <strong>Tip:</strong> Drag and drop to reorder your content. The order here will be reflected on your bio page.
                   </div>
                 </div>
