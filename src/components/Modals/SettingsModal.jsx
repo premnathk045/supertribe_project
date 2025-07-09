@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { FiX, FiUser, FiLock, FiBell, FiCreditCard, FiStar, FiHelpCircle, FiLogOut, FiSettings } from 'react-icons/fi'
+import { FiX, FiUser, FiLock, FiBell, FiCreditCard, FiStar, FiHelpCircle, FiLogOut, FiSettings, FiGlobe, FiLink } from 'react-icons/fi'
 import { useAuth } from '../../contexts/AuthContext'
 
 const settingsSections = [
@@ -8,6 +8,7 @@ const settingsSections = [
   { icon: FiLock, title: 'Privacy & Security', description: 'Control your privacy settings' },
   { icon: FiBell, title: 'Notifications', description: 'Manage notification preferences' },
   { icon: FiCreditCard, title: 'Payment Methods', description: 'Add or edit payment options' },
+  { icon: FiGlobe, title: 'Social Media Links', description: 'Manage your social media presence' },
   { icon: FiHelpCircle, title: 'Help & Support', description: 'Get help and contact support' }
 ]
 
@@ -28,6 +29,11 @@ function SettingsModal({ isOpen, onClose }) {
   const handleCreatorSettings = () => {
     onClose()
     navigate('/creator-dashboard')
+  }
+
+  const handleSocialMediaSettings = () => {
+    onClose()
+    navigate('/settings/social-aggregator')
   }
 
   return (
@@ -91,7 +97,7 @@ function SettingsModal({ isOpen, onClose }) {
 
             {/* Creator Status Section */}
             {user && (
-              <div className="mb-6">
+              <div className="space-y-4 mb-6">
                 {isFan() ? (
                   <motion.button
                     initial={{ opacity: 0, y: 20 }}
@@ -131,6 +137,28 @@ function SettingsModal({ isOpen, onClose }) {
                     </div>
                   </motion.button>
                 )}
+                <motion.button
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                  whileHover={{ x: 4 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    onClose()
+                    navigate('/settings/social-aggregator')
+                  }}
+                  className="w-full p-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-xl transition-all text-left"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="p-2 bg-white/20 rounded-lg">
+                      <FiLink className="text-xl text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-white">Link in Bio</h3>
+                      <p className="text-sm text-white/90">Create a custom bio page with your social links</p>
+                    </div>
+                  </div>
+                </motion.button>
               </div>
             )}
 

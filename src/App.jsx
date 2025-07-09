@@ -9,11 +9,13 @@ import NotificationsPage from './pages/NotificationsPage'
 import ProfilePage from './pages/ProfilePage'
 import MessagesPage from './pages/MessagesPage'
 import ProfileView from './pages/ProfileView'
+import BioPage from './pages/BioPage'
 import PostView from './pages/PostView'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import CreatorVerificationPage from './pages/CreatorVerificationPage'
 import CreatorDashboardPage from './pages/CreatorDashboardPage'
 import StorageDebugPage from './pages/StorageDebugPage'
+import SocialAggregatorSettingsPage from './pages/SocialAggregatorSettingsPage'
 import ProtectedRoute from './components/Auth/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -26,6 +28,12 @@ function App() {
             <Routes>
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/storage-debug" element={<StorageDebugPage />} />
+              <Route path="/bio/:username" element={<BioPage />} />
+              <Route path="/settings/social-aggregator" element={
+                <ProtectedRoute>
+                  <SocialAggregatorSettingsPage />
+                </ProtectedRoute>
+              } />
               <Route path="/creator-verification" element={
                 <ProtectedRoute>
                   <CreatorVerificationPage />
