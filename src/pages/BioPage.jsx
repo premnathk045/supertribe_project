@@ -10,6 +10,7 @@ import {
 import { useAuth } from '../contexts/AuthContext'
 import { fetchBioPageByUsername, getPlatformMetadata, trackBioPageEvent } from '../lib/socialAggregator'
 import LoadingSpinner from '../components/UI/LoadingSpinner'
+import { validateUrl } from '../utils/validation'
 
 // Social Link Item Component
 function SocialLinkItem({ link }) {
@@ -278,8 +279,10 @@ function BioPage() {
   const [copied, setCopied] = useState(false)
   const [activeFilters, setActiveFilters] = useState({
     platform: '',
-    tag: ''
+    tag: '',
+    timeoutId: null
   })
+  const [notFound, setNotFound] = useState(false)
   
   // Load bio page data
   useEffect(() => {
@@ -294,13 +297,52 @@ function BioPage() {
       setLoading(true)
       setError(null)
       
-      const data = await fetchBioPageByUsername(username)
-      setPageData(data)
+      // Set a timeout to show a loading state for at least 0.5 seconds
+      const timeoutPromise = new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Fetch the bio page data
+      const dataPromise = fetchBioPageByUsername(username);
+      
+      // Use Promise.all to wait for both the timeout and the data fetch
+      const [_, data] = await Promise.all([timeoutPromise, dataPromise]);
+      
+      // Set a timeout for maximum 5 seconds
+      const maxTimeout = setTimeout(() => {
+        if (loading) {
+          setError('Request timed out. Please try again.')
+          setLoading(false)
+        }
+      }, 5000)
+      
+      if (data) {
+        setPageData(data)
+        clearTimeout(maxTimeout)
+      } else {
+        setNotFound(true)
+        clearTimeout(maxTimeout)
+      }
     } catch (err) {
       console.error('Error loading bio page:', err)
       setError('This bio page could not be found or is unavailable.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Validate URL before processing
+  const validateBioUrl = (url) => {
+    if (!validateUrl(url)) {
+      return false;
+    }
+    
+    // Check for specific domain whitelist (optional)
+    const allowedDomains = ['instagram.com', 'twitter.com', 'youtube.com', 'tiktok.com', 'facebook.com'];
+    try {
+      const urlObj = new URL(url);
+      const domain = urlObj.hostname.replace('www.', '');
+      return allowedDomains.some(allowedDomain => domain.includes(allowedDomain));
+    } catch (e) {
+      return false;
     }
   }
   
@@ -375,24 +417,49 @@ function BioPage() {
     return pageData?.bioSettings?.show_aggregated_posts !== false && pageData?.posts.length > 0
   }
   
+  // Apply filters with debounce
+  const applyFilters = (filters) => {
+    // Clear any existing timeout
+    if (activeFilters.timeoutId) {
+      clearTimeout(activeFilters.timeoutId);
+    }
+    
+    // Set a new timeout for 300ms
+    const timeoutId = setTimeout(() => {
+      setActiveFilters({
+        ...filters,
+        timeoutId: null
+      });
+    }, 300);
+    
+    // Update state with the new timeout ID
+    setActiveFilters({
+      ...filters,
+      timeoutId
+    });
+  }
+  
   // Get filtered posts
   const filteredPosts = getFilteredPosts()
-  
+
   // Get layout settings
   const layoutSettings = getLayoutSettings()
   
   if (loading) {
     return (
-      <div 
-        className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: layoutSettings.backgroundColor }}
-      >
-        <LoadingSpinner size="lg" />
+      <div className="min-h-screen bg-white">
+        <div 
+          className="flex flex-col items-center justify-center h-screen"
+          style={{ backgroundColor: layoutSettings.backgroundColor }}
+        >
+          <LoadingSpinner size="lg" />
+          <p className="text-gray-600 mt-4">Loading bio page...</p>
+        </div>
       </div>
     )
   }
   
-  if (error || !pageData) {
+  if (notFound || error || !pageData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="text-center max-w-md">
@@ -401,7 +468,9 @@ function BioPage() {
             {error || 'Bio Page Not Found'}
           </h1>
           <p className="text-gray-600 mb-6">
-            The bio page you're looking for doesn't exist or is not available.
+            {notFound 
+              ? `@${username} doesn't exist or hasn't set up their bio page yet.`
+              : 'The bio page you're looking for is not available right now.'}
           </p>
           <Link
             to="/"
@@ -582,7 +651,7 @@ function BioPage() {
         )}
         
         {/* Content Section */}
-        {shouldShowContent() && (
+        {shouldShowContent() && filteredPosts.length > 0 && (
           <motion.section
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -599,15 +668,19 @@ function BioPage() {
             {(getPlatforms().length > 0 || getTags().length > 0) && (
               <div 
                 className="flex flex-wrap items-center justify-center gap-2 mb-6 p-3 rounded-lg"
-                style={{ backgroundColor: `${layoutSettings.accentColor}10` }}
+                style={{ 
+                  backgroundColor: `${layoutSettings.accentColor}10`,
+                  maxWidth: '100%',
+                  overflowX: 'auto'
+                }}
               >
                 {/* Platform Filter */}
                 {getPlatforms().length > 0 && (
                   <div className="flex items-center space-x-1">
                     <select
                       value={activeFilters.platform}
-                      onChange={(e) => setActiveFilters(prev => ({ ...prev, platform: e.target.value }))}
-                      className="text-sm border-none rounded-lg focus:outline-none focus:ring-2"
+                      onChange={(e) => applyFilters({ ...activeFilters, platform: e.target.value })}
+                      className="text-sm border-none rounded-lg focus:outline-none focus:ring-2 px-2 py-1 min-w-[120px]"
                       style={{ 
                         backgroundColor: `${layoutSettings.accentColor}20`,
                         color: layoutSettings.accentColor
@@ -628,8 +701,8 @@ function BioPage() {
                   <div className="flex items-center space-x-1">
                     <select
                       value={activeFilters.tag}
-                      onChange={(e) => setActiveFilters(prev => ({ ...prev, tag: e.target.value }))}
-                      className="text-sm border-none rounded-lg focus:outline-none focus:ring-2"
+                      onChange={(e) => applyFilters({ ...activeFilters, tag: e.target.value })}
+                      className="text-sm border-none rounded-lg focus:outline-none focus:ring-2 px-2 py-1 min-w-[120px]"
                       style={{ 
                         backgroundColor: `${layoutSettings.accentColor}20`,
                         color: layoutSettings.accentColor
@@ -648,7 +721,7 @@ function BioPage() {
                 {/* Clear Filters Button */}
                 {(activeFilters.platform || activeFilters.tag) && (
                   <button
-                    onClick={() => setActiveFilters({ platform: '', tag: '' })}
+                    onClick={() => applyFilters({ platform: '', tag: '' })}
                     className="text-xs px-2 py-1 rounded-full"
                     style={{ 
                       backgroundColor: `${layoutSettings.accentColor}40`,
@@ -706,8 +779,8 @@ function BioPage() {
             
             {/* Posts Grid/List */}
             {filteredPosts.length > 0 ? (
-              layoutSettings.layoutType === 'grid' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              layoutSettings.layoutType === 'grid' || window.innerWidth < 640 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filteredPosts.map((post) => (
                     <ContentGridItem key={post.id} post={post} />
                   ))}
@@ -724,7 +797,9 @@ function BioPage() {
                 className="text-center py-12 rounded-lg border"
                 style={{ 
                   borderColor: `${layoutSettings.accentColor}30`,
-                  backgroundColor: `${layoutSettings.accentColor}05`
+                  backgroundColor: `${layoutSettings.accentColor}05`,
+                  maxWidth: '100vw',
+                  overflowX: 'hidden'
                 }}
               >
                 <h3 
@@ -742,7 +817,7 @@ function BioPage() {
         )}
         
         {/* Footer */}
-        <footer className="mt-16 py-4 text-center text-sm" style={{ color: `${layoutSettings.textColor}60` }}>
+        <footer className="mt-8 md:mt-16 py-4 px-4 text-center text-sm" style={{ color: `${layoutSettings.textColor}60` }}>
           <div className="flex flex-wrap justify-center items-center gap-2">
             <Link to="/" className="hover:underline">Home</Link>
             <span>•</span>

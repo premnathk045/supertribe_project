@@ -223,7 +223,7 @@ function SocialLinkForm({ isEditing, linkData, onSubmit, onCancel }) {
   }
   
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-6 border-t border-gray-200">
+    <form onSubmit={handleSubmit} className="space-y-4 p-3 md:p-6 border-t border-gray-200">
       <h3 className="text-lg font-semibold text-gray-900">
         {isEditing ? 'Edit Social Link' : 'Add Social Link'}
       </h3>
@@ -303,17 +303,17 @@ function SocialLinkForm({ isEditing, linkData, onSubmit, onCancel }) {
       </div>
       
       {/* Form Actions */}
-      <div className="flex justify-end space-x-2 pt-4">
+      <div className="flex flex-col md:flex-row md:justify-end space-y-2 md:space-y-0 md:space-x-2 pt-4 sticky bottom-14 md:bottom-auto md:static bg-white p-2 md:p-0">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full md:w-auto px-4 py-3 md:py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full md:w-auto px-4 py-3 md:py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           {isEditing ? 'Save Changes' : 'Add Link'}
         </button>
@@ -472,16 +472,16 @@ function SocialProfileConfig() {
   }
   
   return (
-    <div className="divide-y divide-gray-200">
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
+    <div className="divide-y divide-gray-200 pb-20 md:pb-0">
+      <div className="p-3 md:p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 space-y-3 md:space-y-0">
           <h2 className="text-xl font-semibold text-gray-900">Social Media Links</h2>
           <button
             onClick={() => {
               setShowAddForm(true)
               setEditingLink(null)
             }}
-            className="flex items-center space-x-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center justify-center space-x-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-3 md:py-2 rounded-lg text-sm font-medium transition-colors w-full md:w-auto"
           >
             <FiPlus />
             <span>Add Link</span>
@@ -498,7 +498,7 @@ function SocialProfileConfig() {
         {links.length === 0 && !showAddForm && !loading ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
             <div className="text-5xl mb-4">🔗</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Social Links Yet</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Links Yet</h3>
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
               Add your social media links to display them on your bio page.
             </p>
@@ -546,7 +546,7 @@ function SocialProfileConfig() {
         )}
         
         {/* Add/Edit Form */}
-        {(showAddForm || editingLink) && (
+        {(showAddForm || editingLink) && (  
           <SocialLinkForm
             isEditing={!!editingLink}
             linkData={editingLink}

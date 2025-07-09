@@ -137,11 +137,11 @@ function BioPageSettings({ settings, onSave, saving }) {
   ]
   
   return (
-    <form onSubmit={handleSubmit} className="p-6 space-y-8">
+    <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-6 md:space-y-8">
       <h2 className="text-xl font-semibold text-gray-900">Bio Page Settings</h2>
       
       {/* Bio Page URL */}
-      <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+      <div className="border border-gray-200 rounded-lg p-3 md:p-4 bg-gray-50">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-medium text-gray-800 flex items-center">
             <FiGlobe className="mr-2" />
@@ -167,9 +167,9 @@ function BioPageSettings({ settings, onSave, saving }) {
             </button>
           </div>
         </div>
-        <div className="bg-white border border-gray-200 rounded p-3 flex items-center justify-between">
-          <div className="flex items-center text-gray-800">
-            <span className="text-gray-500 mr-1">{window.location.origin}/bio/</span>
+        <div className="bg-white border border-gray-200 rounded p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center text-gray-800 overflow-x-auto whitespace-nowrap mb-2 sm:mb-0 text-sm">
+            <span className="text-gray-500 mr-1 text-xs sm:text-sm">{window.location.origin}/bio/</span>
             <span className="font-medium">
               {formData.custom_url || userProfile?.username || 'username'}
             </span>
@@ -186,15 +186,15 @@ function BioPageSettings({ settings, onSave, saving }) {
       </div>
       
       {/* Custom URL */}
-      <div className="space-y-4">
+      <div className="space-y-3 md:space-y-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-1">URL & Discoverability</h3>
         
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Custom URL (optional)
           </label>
-          <div className="flex items-center">
-            <span className="text-gray-500 bg-gray-100 px-3 py-2 rounded-l-lg border border-r-0 border-gray-300">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center">
+            <span className="text-gray-500 bg-gray-100 w-full sm:w-auto px-3 py-2 rounded-lg sm:rounded-l-lg sm:rounded-r-none border border-b-0 sm:border-b sm:border-r-0 border-gray-300 text-xs sm:text-sm">
               {window.location.origin}/bio/
             </span>
             <input
@@ -203,8 +203,8 @@ function BioPageSettings({ settings, onSave, saving }) {
               onChange={(e) => handleInputChange('custom_url', e.target.value.toLowerCase())}
               placeholder={userProfile?.username || 'username'}
               className={`flex-1 border ${
-                errors.custom_url ? 'border-red-300 bg-red-50' : 'border-gray-300'
-              } rounded-r-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500`}
+                errors.custom_url ? 'border-red-300 bg-red-50' : 'border-gray-300' 
+              } rounded-lg sm:rounded-l-none sm:rounded-r-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 w-full`}
             />
           </div>
           {errors.custom_url ? (
@@ -217,7 +217,7 @@ function BioPageSettings({ settings, onSave, saving }) {
         </div>
         
         {/* Visibility */}
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-3 md:p-4 bg-gray-50 rounded-lg">
           <div className="flex items-center space-x-2">
             <FiEyeOff className={`${formData.is_public ? 'text-gray-400' : 'text-red-500'}`} />
             <div>
@@ -241,7 +241,7 @@ function BioPageSettings({ settings, onSave, saving }) {
         </div>
         
         {/* Content Display */}
-        <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
+        <div className="space-y-3 p-3 md:p-4 bg-gray-50 rounded-lg">
           <h4 className="font-medium text-gray-900 flex items-center">
             <FiLayout className="mr-2" />
             Content Display
@@ -282,7 +282,7 @@ function BioPageSettings({ settings, onSave, saving }) {
           {formData.show_aggregated_posts && (
             <div>
               <p className="font-medium text-gray-800">Content Layout</p>
-              <div className="flex space-x-3 mt-2">
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 mt-2">
                 <label className={`flex items-center justify-center w-32 h-24 border-2 rounded-lg cursor-pointer ${
                   formData.layout_type === 'grid' 
                     ? 'border-primary-500 bg-primary-50' 
@@ -336,7 +336,7 @@ function BioPageSettings({ settings, onSave, saving }) {
       
       {/* SEO & Metadata */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">SEO & Metadata</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1 mt-4 md:mt-0">SEO & Metadata</h3>
         
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -422,7 +422,7 @@ function BioPageSettings({ settings, onSave, saving }) {
       </div>
       
       {/* Appearance */}
-      <div className="space-y-4">
+      <div className="space-y-3 md:space-y-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-1 flex items-center">
           <FiEdit className="mr-2" />
           Appearance
@@ -447,7 +447,7 @@ function BioPageSettings({ settings, onSave, saving }) {
         </div>
         
         {/* Color Pickers */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
           {/* Background Color */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -572,7 +572,7 @@ function BioPageSettings({ settings, onSave, saving }) {
           </div>
         </div>
         
-        <div className="bg-blue-50 p-4 rounded-lg">
+        <div className="bg-blue-50 p-3 md:p-4 rounded-lg">
           <div className="flex items-start space-x-3">
             <FiInfo className="text-blue-500 mt-0.5" />
             <div className="text-sm text-blue-800">
@@ -583,11 +583,11 @@ function BioPageSettings({ settings, onSave, saving }) {
       </div>
       
       {/* Save Button */}
-      <div className="pt-4 flex justify-end">
+      <div className="pt-4 flex justify-end sticky bottom-14 md:bottom-0 md:static bg-white p-2 md:p-0">
         <button
           type="submit"
           disabled={saving}
-          className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 flex items-center space-x-2"
+          className="w-full md:w-auto px-6 py-3 md:py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 flex items-center justify-center space-x-2"
         >
           {saving ? (
             <>
