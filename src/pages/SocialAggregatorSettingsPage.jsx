@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { FiArrowLeft, FiX, FiCheck, FiAlertTriangle } from 'react-icons/fi'
+import { FiArrowLeft, FiX, FiCheck, FiAlertTriangle, FiLink, FiLayout, FiSettings } from 'react-icons/fi'
 import { useAuth } from '../contexts/AuthContext'
 import SocialProfileConfig from '../components/SocialAggregator/SocialProfileConfig'
 import ContentAggregator from '../components/SocialAggregator/ContentAggregator'
@@ -88,8 +88,8 @@ function SocialAggregatorSettingsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -100,17 +100,25 @@ function SocialAggregatorSettingsPage() {
           <h1 className="text-lg font-semibold">Link in Bio</h1>
           
           <a
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600 md:hidden"
             href={getBioPageUrl()}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary-500 hover:text-primary-600 text-sm font-medium"
+          >
+            <FiLink className="text-xl" />
+          </a>
+          <a
+            className="hidden md:block text-primary-500 hover:text-primary-600 text-sm font-medium"
+            href={getBioPageUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
           >
             View Bio Page
           </a>
         </div>
         
-        {/* Tabs */}
-        <div className="flex border-t border-gray-200 px-4">
+        {/* Tabs - Desktop */}
+        <div className="hidden md:flex border-t border-gray-200 px-4">
           <button
             onClick={() => setActiveTab('profile')}
             className={`py-3 px-4 font-medium transition-colors ${
@@ -142,6 +150,37 @@ function SocialAggregatorSettingsPage() {
             Page Settings
           </button>
         </div>
+      </div>
+
+      {/* Mobile Bottom Tabs */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-10 bg-white border-t border-gray-200 flex justify-around items-center h-14">
+        <button
+          onClick={() => setActiveTab('profile')}
+          className={`flex flex-col items-center justify-center py-2 px-4 w-1/3 ${
+            activeTab === 'profile' ? 'text-primary-500' : 'text-gray-500'
+          }`}
+        >
+          <FiLink className="text-xl mb-1" />
+          <span className="text-xs font-medium">Links</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('posts')}
+          className={`flex flex-col items-center justify-center py-2 px-4 w-1/3 ${
+            activeTab === 'posts' ? 'text-primary-500' : 'text-gray-500'
+          }`}
+        >
+          <FiLayout className="text-xl mb-1" />
+          <span className="text-xs font-medium">Content</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`flex flex-col items-center justify-center py-2 px-4 w-1/3 ${
+            activeTab === 'settings' ? 'text-primary-500' : 'text-gray-500'
+          }`}
+        >
+          <FiSettings className="text-xl mb-1" />
+          <span className="text-xs font-medium">Settings</span>
+        </button>
       </div>
       
       {/* Error/Success Messages */}
@@ -178,8 +217,8 @@ function SocialAggregatorSettingsPage() {
       )}
       
       {/* Page Content */}
-      <div className="max-w-4xl mx-auto p-4">
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="max-w-4xl mx-auto p-2 md:p-4 pb-20 md:pb-4">
+        <div className="bg-white md:rounded-xl md:border md:border-gray-200 overflow-hidden">
           <AnimatePresence mode="wait">
             {activeTab === 'profile' && (
               <motion.div
