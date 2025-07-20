@@ -66,19 +66,24 @@ export const AuthProvider = ({ children }) => {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('🔄 Auth state change:', event, session)
       setSession(session)
       setUser(session?.user ?? null)
       
-      if (session?.user) {
-        const profile = await fetchUserProfile(session.user.id)
-        setUserProfile(profile)
-      } else {
-        setUserProfile(null)
-      }
-      
-      setLoading(false)
+      // Dispatch async operations after callback completion to avoid deadlocks
+      setTimeout(async () => {
+        if (session?.user) {
+          console.log('👤 User found, fetching profile...')
+          const profile = await fetchUserProfile(session.user.id)
+          console.log('📋 User profile:', profile)
+          setUserProfile(profile)
+        } else {
+          setUserProfile(null)
+        }
+        
+        setLoading(false)
+      }, 0)
     })
 
     return () => subscription.unsubscribe()
