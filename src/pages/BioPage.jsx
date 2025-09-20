@@ -557,12 +557,12 @@ function BioPage() {
             style={{ borderColor: layoutSettings.accentColor }}
           >
             <img 
-              src={pageData.profile.avatar_url || 'https://via.placeholder.com/300?text=No+Image'} 
+              src={pageData.profile.avatar_url || '"https://placehold.co/300x200?text=No+Image"'} 
               alt={pageData.profile.display_name || pageData.profile.username} 
               className="w-full h-full object-cover"
               onError={(e) => {
                 e.target.onerror = null
-                e.target.src = 'https://via.placeholder.com/300?text=No+Image'
+                e.target.src = '"https://placehold.co/300x200?text=No+Image"'
               }}
             />
           </motion.div>
