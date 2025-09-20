@@ -24,6 +24,7 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
+        <HelmetProvider>
         <div className="min-h-screen bg-gray-50">
           <AnimatePresence mode="wait">
             <Routes>
@@ -90,6 +91,7 @@ function App() {
             </Routes>
           </AnimatePresence>
         </div>
+          </HelmetProvider>
       </AuthProvider>
     </ErrorBoundary>
   )
