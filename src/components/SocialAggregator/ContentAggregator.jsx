@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  FiLink, FiPlus, FiTrash2, FiImage, FiTag, FiFilter, 
+  FiLink, FiPlus, FiTrash2, FiEdit2, FiImage, FiTag, FiFilter, 
   FiCheck, FiInfo, FiX, FiUpload, FiLayout, FiExternalLink,
   FiEye, FiEyeOff, FiTwitter, FiInstagram, FiYoutube, FiMusic
 } from 'react-icons/fi'
