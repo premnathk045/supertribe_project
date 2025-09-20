@@ -570,7 +570,7 @@ function BioPage() {
           <motion.h1
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="text-2xl font-bold mb-1"
+            className="flex justify-center items-center text-2xl font-bold mb-1"
             style={{ color: layoutSettings.textColor }}
           >
             {pageData.profile.display_name || pageData.profile.username}
