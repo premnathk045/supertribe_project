@@ -5,8 +5,10 @@ import { Helmet } from 'react-helmet-async'
 import { 
   FiTwitter, FiInstagram, FiYoutube, FiGithub, FiLinkedin, 
   FiFacebook, FiGlobe, FiMail, FiShare2, FiCopy, FiCheck,
-  FiGrid, FiList, FiHeart, FiTag, FiFilter, FiEdit 
+  FiGrid, FiList, FiHeart, FiTag, FiFilter, FiEdit, 
+  FiMusic, FiLink
 } from 'react-icons/fi'
+
 import { useAuth } from '../contexts/AuthContext'
 import { fetchBioPageByUsername, getPlatformMetadata, trackBioPageEvent } from '../lib/socialAggregator'
 import LoadingSpinner from '../components/UI/LoadingSpinner'
