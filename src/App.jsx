@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AuthProvider } from './contexts/AuthContext'
+import { HelmetProvider } from "react-helmet-async";
 import Layout from './components/Layout/Layout'
 import HomePage from './pages/HomePage'
 import DiscoverPage from './pages/DiscoverPage'
