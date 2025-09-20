@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   FiLink, FiPlus, FiTrash2, FiImage, FiTag, FiFilter, 
   FiCheck, FiInfo, FiX, FiUpload, FiLayout, FiExternalLink,
-  FiEye, FiEyeOff
+  FiEye, FiEyeOff, FiTwitter, FiInstagram, FiYoutube, FiMusic
 } from 'react-icons/fi'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
